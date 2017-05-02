@@ -155,9 +155,15 @@ $(document).ready(function () {
     function destroyBlock(sprite){
           
         
-        crackAnimation(sprite,9);
+        var destroy = crackAnimation(sprite,9);
+
+        destroy.onComplete.add(function(){
+                sprite.destroy();
+            },this);
+
         
-        sprite.destroy();
+        
+        //sprite.destroy();
         
         
     }
@@ -171,10 +177,10 @@ $(document).ready(function () {
             var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_all');
             var destroy = cracks.animations.add('destroy');
             cracks.animations.play('destroy', 30, false, true);
+            
+            return destroy;
+        
 
-        
-        
-        
     }
     
     
@@ -265,16 +271,14 @@ $(document).ready(function () {
             for (var j = START_Y; j < GAME_HEIGHT; j += 60) {
                 // de 0 à 420
                 for (var i = 0; i < GAME_WIDTH; i += 60) {
-                    // ici qu'on mettrait un random pour définir le type des blocks
+
                     var profondeur = (j - 300) / 60;
                     var block = new Block(i, j, profondeur)
                     
-                       do { 
+                    do { 
                     
-                    var rand = Math.floor((Math.random() * 100) + 1);
-                    
+                        var rand = Math.floor((Math.random() * 100) + 1);
                                  
-
                         if(rand >= 1 && rand < 85){
                             block.type = TYPEBLOCK.DIRT;
                         } else if (rand >= 85 && rand < 98){
@@ -283,7 +287,8 @@ $(document).ready(function () {
                             block.type = TYPEBLOCK.BEDROCK;
                         } 
 
-                    } while(block.location.y == 360 && block.type != TYPEBLOCK.DIRT)
+                    } while(block.location.y == START_Y && block.type != TYPEBLOCK.DIRT)
+                        // Pour ne pas qu'un block de la première ligne soit autre chose d'un block dirt
                     
                     
                     
