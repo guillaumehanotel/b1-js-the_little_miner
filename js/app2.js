@@ -3,8 +3,8 @@ $(document).ready(function () {
     
     const START_Y = 360;
     const GAME_WIDTH = 420;
-    const GAME_HEIGHT = 1280
-    const FRAME_HEIGHT = 700;
+    const GAME_HEIGHT = 1320;
+    const FRAME_HEIGHT = 650;
     
     
     
@@ -23,6 +23,10 @@ $(document).ready(function () {
         
         game.load.image('grass_block', 'assets/img/grass_block.png');
         
+        game.load.image('stone_block', 'assets/img/stone_block.jpg');
+        
+        game.load.image('bedrock_block', 'assets/img/bedrock_block.png');
+        
         /*
         game.load.image('destroy_1', 'assets/img/destroy_stage_1.png');
         game.load.image('destroy_2', 'assets/img/destroy_stage_2.png');
@@ -36,6 +40,10 @@ $(document).ready(function () {
         */
         
         game.load.spritesheet('destroy_all', 'assets/img/destroy_stage_all.png', 60, 60, 9);
+        
+        game.load.spritesheet('destroy_all_', 'assets/img/destroy_stage_1_to_5.png', 60, 60, 5);
+        game.load.spritesheet('destroy_all_', 'assets/img/destroy_stage_6_to_9.png', 60, 60, 4);
+
     }
     
     
@@ -118,7 +126,13 @@ $(document).ready(function () {
 
                 // si les éléments sont de types DIRT
                 } else if (element.type == TYPEBLOCK.DIRT) { 
-                    var sprite = blocks.create(element.location.x, element.location.y, 'dirt_block')    
+                    var sprite = blocks.create(element.location.x, element.location.y, 'dirt_block')   
+                    
+                } else if (element.type == TYPEBLOCK.STONE) { 
+                    var sprite = blocks.create(element.location.x, element.location.y, 'stone_block')    
+                    
+                } else if (element.type == TYPEBLOCK.BEDROCK) { 
+                    var sprite = blocks.create(element.location.x, element.location.y, 'bedrock_block')    
                 }
                 
                 sprite.x = element.location.x;
@@ -141,7 +155,7 @@ $(document).ready(function () {
     function destroyBlock(sprite){
           
         
-        crackAnimation(sprite);
+        crackAnimation(sprite,9);
         
         sprite.destroy();
         
@@ -150,15 +164,15 @@ $(document).ready(function () {
     
     
     
-    function crackAnimation(sprite){
+    function crackAnimation(sprite, state){
         
-        ( function(sprite){
         
-        var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_all');
-        var destroy = cracks.animations.add('destroy');
-        cracks.animations.play('destroy', 30, false, true);
+
+            var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_all');
+            var destroy = cracks.animations.add('destroy');
+            cracks.animations.play('destroy', 30, false, true);
+
         
-        })(sprite);
         
         
     }
@@ -172,6 +186,9 @@ $(document).ready(function () {
     /* UPDATE */
     function update() {
         //game.camera.y += 1;
+        if(GameModel.pioche == 0){
+            //destroy
+        }
     }
     
     
@@ -184,20 +201,48 @@ $(document).ready(function () {
     
     function clickBlock(sprite){
 
+        
+        
         //console.log(sprite.x+","+sprite.y);
         var block = GameModel.getBlock(sprite.x,sprite.y);
         
         var destroyed = block.hitBlock();
         
+        getResistanceState(block);
+        
         if(destroyed == true){
-            destroyBlock(sprite);
-        } else {
             
+            
+            
+            destroyBlock(sprite, 9);
+           
+            
+            
+            // Res = 2
+        } else if(destroyed == false){
+                  
+            //destroyBlock(sprite, 5);
         }
             
-        
+        updateText();
         
     }
+    
+    function updateText(){
+        scoreText.setText("Pioche: "+GameModel.pioche);
+    }
+    
+    
+                  
+                  
+     function getResistanceState(block){
+     
+         var original_resistance = block.getType().name;
+         console.log(original_resistance);
+         
+         
+     }
+                  
     
     
     
@@ -223,7 +268,25 @@ $(document).ready(function () {
                     // ici qu'on mettrait un random pour définir le type des blocks
                     var profondeur = (j - 300) / 60;
                     var block = new Block(i, j, profondeur)
-                    block.type = TYPEBLOCK.DIRT;
+                    
+                       do { 
+                    
+                    var rand = Math.floor((Math.random() * 100) + 1);
+                    
+                                 
+
+                        if(rand >= 1 && rand < 85){
+                            block.type = TYPEBLOCK.DIRT;
+                        } else if (rand >= 85 && rand < 98){
+                            block.type = TYPEBLOCK.STONE;
+                        } else if (rand >= 98 && rand <= 100){
+                            block.type = TYPEBLOCK.BEDROCK;
+                        } 
+
+                    } while(block.location.y == 360 && block.type != TYPEBLOCK.DIRT)
+                    
+                    
+                    
                     block.setResistance();
                     array_blocks.push(block);
                 }
@@ -296,7 +359,7 @@ $(document).ready(function () {
         case TYPEBLOCK.STONE:
             this.resistance = 2;
             break;
-        case TYPEBLOCK.OBSIDIAN:
+        case TYPEBLOCK.BEDROCK:
             this.resistance = 9999;
             break;
         default:
@@ -313,8 +376,10 @@ $(document).ready(function () {
     
         this.printLocation();
 
+        if(this.type != TYPEBLOCK.BEDROCK){
+            GameModel.pioche--;
+        }
         
-        GameModel.pioche--;
         this.resistance--;
         if(this.resistance == 0){
             this.destroyed = true;
@@ -330,6 +395,10 @@ $(document).ready(function () {
         console.log("(" + this.location.x + "," + this.location.y + ")");
     }
     
+    Block.prototype.getType = function(){
+        return this.type;
+    }
+    
     
     
     
@@ -342,8 +411,8 @@ $(document).ready(function () {
             name: "Stone"
             , resistance: 2
         }
-        , OBSIDIAN: {
-            name: "Obsidian"
+        , BEDROCK: {
+            name: "Bedrock"
             , resistance: 9999
         }
     };
