@@ -38,6 +38,7 @@ $(document).ready(function () {
         game.load.image('bedrock_block', 'assets/img/bedrock_block.png');
         game.load.image('tnt_block', 'assets/img/tnt_block.jpg');
         game.load.image('dynamite_block', 'assets/img/dynamite_block.jpg');
+        game.load.image('bonus_block', 'assets/img/bonus_block.png');
 
         /*
         game.load.image('destroy_1', 'assets/img/destroy_stage_1.png');
@@ -200,6 +201,8 @@ $(document).ready(function () {
                     var sprite = blocks.create(element.location.x, element.location.y, 'tnt_block')
                 } else if (element.type == TYPEBLOCK.DYNAMITE) {
                     var sprite = blocks.create(element.location.x, element.location.y, 'dynamite_block')
+                } else if (element.type == TYPEBLOCK.BONUS) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'bonus_block')
                 }
                 
                 sprite.x = element.location.x;
@@ -420,20 +423,23 @@ $(document).ready(function () {
      Block.prototype.setRandomType = function () {
          do {
              var rand = Math.floor((Math.random() * 100) + 1);
-             if (rand >= 1 && rand < 80) {
+             if (rand >= 1 && rand < 75) {
                  this.type = TYPEBLOCK.DIRT;
              }
-             else if (rand >= 80 && rand < 91) {
+             else if (rand >= 75 && rand < 86) {
                  this.type = TYPEBLOCK.STONE;
              }
-             else if (rand >= 91 && rand < 94) {
+             else if (rand >= 86 && rand < 91) {
                  this.type = TYPEBLOCK.BEDROCK;
              }
-             else if (rand >= 94 && rand < 97) {
+             else if (rand >= 91 && rand < 94) {
                  this.type = TYPEBLOCK.TNT;
              }
-             else if (rand >= 97 && rand <= 100) {
+             else if (rand >= 94 && rand < 97) {
                  this.type = TYPEBLOCK.DYNAMITE;
+             }
+             else if (rand >= 97 && rand <= 100) {
+                 this.type = TYPEBLOCK.BONUS;
              }
          } while (this.location.y == START_Y && this.type != TYPEBLOCK.DIRT)
         // Pour ne pas qu'un block de la première ligne soit autre chose d'un block dirt
@@ -464,6 +470,9 @@ $(document).ready(function () {
         case TYPEBLOCK.DYNAMITE:
             this.resistance = TYPEBLOCK.DYNAMITE.resistance;
             break;
+        case TYPEBLOCK.BONUS:
+            this.resistance = TYPEBLOCK.BONUS.resistance;
+            break;        
         default:
             this.resistance = 1;
             break;
@@ -483,7 +492,10 @@ $(document).ready(function () {
 
         this.printLocation();
 
-        if(this.type != TYPEBLOCK.BEDROCK){
+        if(this.type == TYPEBLOCK.BONUS){
+            GameModel.pioche+= 5;
+        }
+        else if(this.type != TYPEBLOCK.BEDROCK){
             GameModel.pioche--;
         }
 
@@ -541,7 +553,8 @@ $(document).ready(function () {
         STONE: { name: "Stone" , resistance: 2 },
         BEDROCK: { name: "Bedrock" , resistance: 9999 },
         TNT: { name: "Tnt" , resistance: 1 },
-        DYNAMITE: { name: "Dynamite" , resistance: 1 }
+        DYNAMITE: { name: "Dynamite" , resistance: 1 },
+        BONUS: { name: "Bonus" , resistance: 1 }
     };
     /* impossibilité de changer les énumérations */
     Object.freeze(TYPEBLOCK);
