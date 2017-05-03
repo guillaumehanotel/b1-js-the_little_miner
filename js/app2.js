@@ -373,6 +373,22 @@ $(document).ready(function () {
                 }
             });
             return res;
+        },
+        
+        getBlocksByProfondeur: function(prof){
+            var res_blocks=[];
+            
+            this.blocks.forEach(function (block) {
+                if(block.profondeur == prof ){
+                    res_blocks.push(block);
+                }
+            });
+            
+            return res_blocks;
+        },
+        
+        destroyDynamite: function(){
+            
         }
 
     };
@@ -531,12 +547,12 @@ $(document).ready(function () {
     
     //Méthode de Block : TNT
     
-    Block.prototype.destructionTNTBlock = function(x,y){
+    /*Block.prototype.destructionTNTBlock = function(x,y){
         var block = GameModel.getBlock(x,y);
         var destroyBlock = [];
         destroyBlock.push(block);
         destroyBlock.push()
-    }
+    }*/
     
     
     
