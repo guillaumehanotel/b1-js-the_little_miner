@@ -5,8 +5,15 @@ $(document).ready(function () {
     const GAME_WIDTH = 420;
     const GAME_HEIGHT = 1320;
     const FRAME_HEIGHT = 650;
+    
+    const PICKER_NB_HIT = 35;
 
     /* const RESISTANCE de chaque type */
+    
+    const RESISTANCE_DIRT = 1;
+    const RESISTANCE_BEDROCK = 9999;
+    const RESISTANCE_STONE =4 ;
+    
 
     /* const proportions d'apparitions des blocks */
 
@@ -21,7 +28,7 @@ $(document).ready(function () {
 
     /*********************************************************************************************/
     /* Méthodes de prélodoage des images du jeu */
-    
+
 
     /**
      * Méthode de la vue : loadImages
@@ -37,7 +44,7 @@ $(document).ready(function () {
         game.load.image('stone_block', 'assets/img/stone_block.jpg');
         game.load.image('bedrock_block', 'assets/img/bedrock_block.png');
 
-        /*
+        
         game.load.image('destroy_1', 'assets/img/destroy_stage_1.png');
         game.load.image('destroy_2', 'assets/img/destroy_stage_2.png');
         game.load.image('destroy_3', 'assets/img/destroy_stage_3.png');
@@ -47,12 +54,15 @@ $(document).ready(function () {
         game.load.image('destroy_7', 'assets/img/destroy_stage_7.png');
         game.load.image('destroy_8', 'assets/img/destroy_stage_8.png');
         game.load.image('destroy_9', 'assets/img/destroy_stage_9.png');
-        */
+        
 
-        game.load.spritesheet('destroy_all', 'assets/img/destroy_stage_all.png', 60, 60, 9);
+        game.load.spritesheet('destroy_all', 'assets/img/destroy_stage_all.png', 60, 60, 10);
+        
+        game.load.spritesheet('destroy_to_1', 'assets/img/destroy_stage_to_1.png', 60, 60, 2);
+        game.load.spritesheet('destroy_to_3', 'assets/img/destroy_stage_to_3.png', 60, 60, 4);
+        game.load.spritesheet('destroy_to_4', 'assets/img/destroy_stage_to_4.png', 60, 60, 5);
+        game.load.spritesheet('destroy_to_6', 'assets/img/destroy_stage_to_6.png', 60, 60, 7);
 
-        game.load.spritesheet('destroy_1_5', 'assets/img/destroy_stage_1_to_5.png', 60, 60, 5);
-        game.load.spritesheet('destroy_6_9', 'assets/img/destroy_stage_6_to_9.png', 60, 60, 4);
 
     }
 
@@ -71,7 +81,7 @@ $(document).ready(function () {
 
     /*********************************************************************************************/
     /* Méthodes de la création grahique du jeu */
-    
+
 
     /**
      * Méthode de la vue : loadGameView
@@ -97,7 +107,7 @@ $(document).ready(function () {
 
         scoreText = game.add.text(16, 16, 'Pioche: ' + GameModel.pioche, {
             fontSize: '23px',
-            fill: '#000'
+            fill: '#fff'
         });
 
 
@@ -131,25 +141,25 @@ $(document).ready(function () {
      *
      */
     function update() {
-
         // Au premier block cliqué, la fenetre descend
+        
+        /*
         game.camera.y += 1;
         scoreText.y = game.camera.y;
+        */
         
-
         // Condition de fin d'arret du jeu
-        if(GameModel.pioche == 0){
-            //destroy
+        if (GameModel.pioche <= 0) {
+            scoreText.setText("Game Over");
         }
-
-
         // Déplacement au curseur pour le débuggage
-        if (cursors.up.isDown){
-             game.camera.y -= 4;
-        } else if (cursors.down.isDown) {
+        if (cursors.up.isDown) {
+            game.camera.y -= 4;
+        }
+        else if (cursors.down.isDown) {
             game.camera.y += 4;
         }
-
+        scoreText.y = game.camera.y;
     }
 
 
@@ -166,24 +176,24 @@ $(document).ready(function () {
      * Fonction servant à créer graphiquement chaque block
      * Pour chaque Block de l'objet GameModel, un sprite contenant les coordonnées du block est créé
      * un listener est ajouté au clic de chaque sprite qui appelle la fonction clickBlock
-     * 
+     *
      *
      */
     function generateBlocksView() {
-        
+
         blocks = game.add.group();
-        
+
         blocks.enableBody = true;
         blocks.inputEnableChildren = true;
-        
+
         // on récupère dans un tableau, l'attribut blocks de l'objet GameModel
         var arrayBlocks = GameModel.blocks;
-        
+
         arrayBlocks.forEach(function (element) {
-            
+
             // si les éléments ne sont pas détruit
             if (element.destroyed == false) {
-                
+
                 // si l'ordonnée des éléments est sur la ligne de départ
                 if (element.location.y == START_Y) {
                     var sprite = blocks.create(element.location.x, element.location.y, 'grass_block');
@@ -193,45 +203,23 @@ $(document).ready(function () {
                 } else if (element.type == TYPEBLOCK.STONE) {
                     var sprite = blocks.create(element.location.x, element.location.y, 'stone_block')
                 } else if (element.type == TYPEBLOCK.BEDROCK) {
-                    var sprite = blocks.create(element.location.x, element.location.y, 'bedrock_block')
+                    var sprite = blocks.create(element.location.x, element.location.y, 'bedrock_block') 
                 }
                 
+                sprite.name = element.type.name;
                 sprite.x = element.location.x;
                 sprite.y = element.location.y;
                 sprite.input.useHandCursor = true;
             }
-            
+
         });
-        
+
         // ajout d'un listener onClick pour chaque sprite
         blocks.onChildInputDown.add(clickBlock, this);
     }
 
-
-
     
-    function destroyBlock(sprite){
-        var destroy = crackAnimation(sprite,9);
-
-        destroy.onComplete.add(function(){
-                sprite.destroy();
-            },this);
-    }
-
-
-
-    function crackAnimation(sprite, state){
-
-        var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_all');
-        var destroy = cracks.animations.add('destroy');
-        cracks.animations.play('destroy', 30, false, true);
-
-        return destroy;
-
-    }
-
-
-
+    
     /**
      * Méthode de la vue : updateText
      * Sert à mettre à jour le texte du nombre de coup restant
@@ -242,15 +230,193 @@ $(document).ready(function () {
 
 
 
+    /********************************************/
+    /* Animation Destruction */
 
 
+    function destroyBlockView(sprite){
+        
+        var block = GameModel.getBlock(sprite.x, sprite.y);
+        var destroy = destroyAnimation(block, sprite);
+        
+        destroy.onComplete.add(function(){
+            sprite.destroy();
+        },this);
+    }
 
+
+    
+    
+    
+
+    function destroyAnimation(block, sprite){
+        
+        var resi_init = block.getInitialResistance();
+        var resi_actuel = block.getResistance();
+        
+        
+        if(sprite.img){
+            sprite.img.destroy();
+        }
+        
+        var begin_frame;
+        var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_all');
+        
+        switch(resi_init){
+            case 2 :
+                begin_frame = 5;
+                break;
+                
+            case 3 : 
+            case 4 : 
+                begin_frame = 6;
+                break;
+                
+            default :
+                begin_frame = 0;
+                break;
+        }
+        
+        
+        var destroy = cracks.animations.add('destroy');
+        cracks.animations.play('destroy', 20, false, true);
+        cracks.animations.currentAnim.setFrame(begin_frame,true);
+
+        return destroy;
+
+    }
+
+
+    
+    
+    
+    /*********************************************/
+    /* Animation Fissurage */
+    
+    function crackBlockView(sprite){
+        
+        var block = GameModel.getBlock(sprite.x, sprite.y);
+        
+        
+        var destroy = crackAnimation(block, sprite);
+        // quand l'animation est finie
+        destroy.onComplete.add(function(){
+            
+            crackImage(block, sprite);
+            
+        },this);
+          
+    }
+    
+    
+    // l'image qui restera affiché après la fin de l'animation
+    function crackImage(block, sprite){
+        
+        var resi_init = block.getInitialResistance();
+        var resi_actuel = block.getResistance();
+        
+        switch(resi_init){
+            case 2 : 
+                sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_5');
+            break;
+                
+                
+            case 3 : 
+                if(resi_actuel == 2){
+                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_3');
+                } else if(resi_actuel == 1){
+                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_6');
+                }
+            break;
+                
+                
+            case 4 :
+                if(resi_actuel == 3){
+                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_2');
+                } else if(resi_actuel == 2){
+                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_4');
+                } else if(resi_actuel == 1){
+                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_6');
+                }
+            break;
+                
+            default:
+                
+            break;
+        
+        
+        }
+    }
+    
+    
+    
+    // retourne l'animation
+    function crackAnimation(block, sprite){
+        
+        var resi_init = block.getInitialResistance();
+        var resi_actuel = block.getResistance();
+        
+        if(sprite.img){
+            sprite.img.destroy();
+        }
+        
+        var begin_frame;
+        
+        switch(resi_init){
+            case 2 : 
+                var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_4');
+                begin_frame = 0;
+            break;
+                
+                
+            case 3 : 
+                if(resi_actuel == 2){
+                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_3');
+                    begin_frame = 0;
+                } else if(resi_actuel == 1){
+                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_6');
+                    begin_frame = 5
+                }
+            break;
+                
+                
+            case 4 :
+                if(resi_actuel == 3){
+                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_1');
+                    begin_frame = 0;
+                } else if(resi_actuel == 2){
+                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_4');
+                    begin_frame = 3;
+                } else if(resi_actuel == 1){
+                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_6');
+                    begin_frame = 5;
+                }
+            break;
+                
+            default:
+                begin_frame = 0;
+                
+            break;
+        }
+        
+        var destroy = cracks.animations.add('destroy');
+        cracks.animations.play('destroy', 20, false, true);
+        cracks.animations.currentAnim.setFrame(begin_frame,true);
+
+        
+        return destroy;
+        
+    }
+    
+    
+    
+    
     /************************************************************************************/
     /***********************************   CONTROLLER  **********************************/
     /************************************************************************************/
     /* Méthode controller -> quand un évenement est joué / un block est cliqué */
-    
-    
+
+
     function clickBlock(sprite){
 
         // block récupéré correspondant à la position du clic
@@ -258,20 +424,18 @@ $(document).ready(function () {
         // variable destroyed à vrai ou faux selon si le block est détruit ou non
         var destroyed = block.hitBlock();
 
-        getResistanceState(block);
+        //getResistanceState(block);
 
         if(destroyed == true){
 
 
-
-            destroyBlock(sprite, 9);
-
+            destroyBlockView(sprite);
 
 
             // Res = 2
-        } else if(destroyed == false){
+        } else if(destroyed == false && sprite.name != 'Bedrock'){
 
-            //destroyBlock(sprite, 5);
+            crackBlockView(sprite);
         }
 
         updateText();
@@ -286,12 +450,14 @@ $(document).ready(function () {
      * Méthode pas fini
      *
      */
+    /*
      function getResistanceState(block){
-         var original_resistance = block.getType().name;
+         var original_resistance = block.getType().resistance;
          console.log(original_resistance);
      }
+*/
 
-
+    
 
 
 
@@ -316,7 +482,7 @@ $(document).ready(function () {
 
     var GameModel = {
         blocks: null,
-        pioche: 35,
+        pioche: PICKER_NB_HIT,
 
 
 
@@ -426,9 +592,11 @@ $(document).ready(function () {
          } while (this.location.y == START_Y && this.type != TYPEBLOCK.DIRT)
         // Pour ne pas qu'un block de la première ligne soit autre chose d'un block dirt
 
-        this.setResistance();     
+        this.setResistance();
      }
-     
+
+
+
 
     /**
      * Méthode de Block : setResistance
@@ -497,7 +665,14 @@ $(document).ready(function () {
         return this.type;
     }
 
+    Block.prototype.getInitialResistance = function(){
+        return this.type.resistance;
+    }
     
+    Block.prototype.getResistance = function(){
+        return this.resistance;
+    }
+
     /*********************************************************************************************/
     /* Enumération des blocks */
 
@@ -507,9 +682,9 @@ $(document).ready(function () {
      * défini les types de blocs disponibles avec leurs noms et leurs résistances
      */
     var TYPEBLOCK = {
-        DIRT: { name: "Dirt", resistance: 1 },
-        STONE: { name: "Stone" , resistance: 2 },
-        BEDROCK: { name: "Bedrock" , resistance: 9999 }
+        DIRT: { name: "Dirt", resistance: RESISTANCE_DIRT },
+        STONE: { name: "Stone" , resistance: RESISTANCE_STONE },
+        BEDROCK: { name: "Bedrock" , resistance: RESISTANCE_BEDROCK }
     };
     /* impossibilité de changer les énumérations */
     Object.freeze(TYPEBLOCK);
