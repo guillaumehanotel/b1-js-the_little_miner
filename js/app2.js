@@ -9,6 +9,11 @@ $(document).ready(function () {
     const PICKER_NB_HIT = 35;
 
     /* const RESISTANCE de chaque type */
+    
+    const RESISTANCE_DIRT = 1;
+    const RESISTANCE_BEDROCK = 9999;
+    const RESISTANCE_STONE =4 ;
+    
 
     /* const proportions d'apparitions des blocks */
 
@@ -51,18 +56,13 @@ $(document).ready(function () {
         game.load.image('destroy_9', 'assets/img/destroy_stage_9.png');
         
 
-        game.load.spritesheet('destroy_all', 'assets/img/destroy_stage_all.png', 60, 60, 9);
+        game.load.spritesheet('destroy_all', 'assets/img/destroy_stage_all.png', 60, 60, 10);
+        
+        game.load.spritesheet('destroy_to_1', 'assets/img/destroy_stage_to_1.png', 60, 60, 2);
+        game.load.spritesheet('destroy_to_3', 'assets/img/destroy_stage_to_3.png', 60, 60, 4);
+        game.load.spritesheet('destroy_to_4', 'assets/img/destroy_stage_to_4.png', 60, 60, 5);
+        game.load.spritesheet('destroy_to_6', 'assets/img/destroy_stage_to_6.png', 60, 60, 7);
 
-        game.load.spritesheet('destroy_1_5', 'assets/img/destroy_stage_1_to_5.png', 60, 60, 5);
-        game.load.spritesheet('destroy_6_9', 'assets/img/destroy_stage_6_to_9.png', 60, 60, 4);
-        
-        game.load.spritesheet('destroy_1_3', 'assets/img/destroy_stage_1_to_3.png', 60, 60, 3);
-        game.load.spritesheet('destroy_4_6', 'assets/img/destroy_stage_4_to_6.png', 60, 60, 3);
-        game.load.spritesheet('destroy_7_9', 'assets/img/destroy_stage_7_to_9.png', 60, 60, 3);
-        
-        game.load.spritesheet('destroy_1_2', 'assets/img/destroy_stage_1_to_2.png', 60, 60, 2);
-        game.load.spritesheet('destroy_3_4', 'assets/img/destroy_stage_3_to_4.png', 60, 60, 2);
-        game.load.spritesheet('destroy_5_6', 'assets/img/destroy_stage_5_to_6.png', 60, 60, 2);
 
     }
 
@@ -254,20 +254,33 @@ $(document).ready(function () {
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
         
+        
+        if(sprite.img){
+            sprite.img.destroy();
+        }
+        
+        var begin_frame;
+        var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_all');
+        
         switch(resi_init){
-            case 1 :
-                var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_all');
-            break;
-            
             case 2 :
-                //sprite.destroy();
-                var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_6_9');
-            break;
+                begin_frame = 5;
+                break;
+                
+            case 3 : 
+            case 4 : 
+                begin_frame = 6;
+                break;
+                
+            default :
+                begin_frame = 0;
+                break;
         }
         
         
         var destroy = cracks.animations.add('destroy');
-        cracks.animations.play('destroy', 30, false, true);
+        cracks.animations.play('destroy', 20, false, true);
+        cracks.animations.currentAnim.setFrame(begin_frame,true);
 
         return destroy;
 
@@ -284,55 +297,112 @@ $(document).ready(function () {
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
         
+        
         var destroy = crackAnimation(block, sprite);
+        // quand l'animation est finie
         destroy.onComplete.add(function(){
-            game.add.sprite(sprite.x, sprite.y, 'destroy_5');
+            
+            crackImage(block, sprite);
+            
         },this);
           
     }
     
     
-    
-    
-    
-    function crackAnimation(block, sprite){
+    // l'image qui restera affiché après la fin de l'animation
+    function crackImage(block, sprite){
         
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
         
-        
         switch(resi_init){
             case 2 : 
-                var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_1_5');
+                sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_5');
             break;
                 
                 
             case 3 : 
-                if(resi_actuel == 3){
-                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_1_3');
-                } else if(resi_actuel == 2){
-                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_4_6');
+                if(resi_actuel == 2){
+                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_3');
+                } else if(resi_actuel == 1){
+                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_6');
                 }
             break;
                 
                 
             case 4 :
-                if(resi_actuel == 4){
-                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_1_2');
-                } else if(resi_actuel == 3){
-                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_3_4');
+                if(resi_actuel == 3){
+                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_2');
                 } else if(resi_actuel == 2){
-                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_5_6');
+                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_4');
+                } else if(resi_actuel == 1){
+                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_6');
                 }
             break;
                 
             default:
                 
             break;
+        
+        
+        }
+    }
+    
+    
+    
+    // retourne l'animation
+    function crackAnimation(block, sprite){
+        
+        var resi_init = block.getInitialResistance();
+        var resi_actuel = block.getResistance();
+        
+        if(sprite.img){
+            sprite.img.destroy();
+        }
+        
+        var begin_frame;
+        
+        switch(resi_init){
+            case 2 : 
+                var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_4');
+                begin_frame = 0;
+            break;
+                
+                
+            case 3 : 
+                if(resi_actuel == 2){
+                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_3');
+                    begin_frame = 0;
+                } else if(resi_actuel == 1){
+                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_6');
+                    begin_frame = 5
+                }
+            break;
+                
+                
+            case 4 :
+                if(resi_actuel == 3){
+                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_1');
+                    begin_frame = 0;
+                } else if(resi_actuel == 2){
+                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_4');
+                    begin_frame = 3;
+                } else if(resi_actuel == 1){
+                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_6');
+                    begin_frame = 5;
+                }
+            break;
+                
+            default:
+                begin_frame = 0;
+                
+            break;
         }
         
         var destroy = cracks.animations.add('destroy');
-        cracks.animations.play('destroy', 30, false, true);
+        cracks.animations.play('destroy', 20, false, true);
+        cracks.animations.currentAnim.setFrame(begin_frame,true);
+
         
         return destroy;
         
@@ -612,9 +682,9 @@ $(document).ready(function () {
      * défini les types de blocs disponibles avec leurs noms et leurs résistances
      */
     var TYPEBLOCK = {
-        DIRT: { name: "Dirt", resistance: 1 },
-        STONE: { name: "Stone" , resistance: 2 },
-        BEDROCK: { name: "Bedrock" , resistance: 9999 }
+        DIRT: { name: "Dirt", resistance: RESISTANCE_DIRT },
+        STONE: { name: "Stone" , resistance: RESISTANCE_STONE },
+        BEDROCK: { name: "Bedrock" , resistance: RESISTANCE_BEDROCK }
     };
     /* impossibilité de changer les énumérations */
     Object.freeze(TYPEBLOCK);
