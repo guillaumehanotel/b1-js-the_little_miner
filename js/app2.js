@@ -12,7 +12,7 @@ $(document).ready(function () {
     
     const RESISTANCE_DIRT = 1;
     const RESISTANCE_BEDROCK = 9999;
-    const RESISTANCE_STONE =4 ;
+    const RESISTANCE_STONE = 2 ;
     
 
     /* const proportions d'apparitions des blocks */
@@ -239,7 +239,11 @@ $(document).ready(function () {
         var block = GameModel.getBlock(sprite.x, sprite.y);
         var destroy = destroyAnimation(block, sprite);
         
+        
         destroy.onComplete.add(function(){
+            if(sprite.img){
+                sprite.img.destroy();
+            }
             sprite.destroy();
         },this);
     }
@@ -299,6 +303,9 @@ $(document).ready(function () {
         
         
         var destroy = crackAnimation(block, sprite);
+        
+        
+        
         // quand l'animation est finie
         destroy.onComplete.add(function(){
             
@@ -314,6 +321,8 @@ $(document).ready(function () {
         
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
+
+
         
         switch(resi_init){
             case 2 : 
@@ -340,12 +349,13 @@ $(document).ready(function () {
                 }
             break;
                 
-            default:
-                
+            default: 
             break;
         
-        
         }
+            
+        
+            
     }
     
     
@@ -355,10 +365,10 @@ $(document).ready(function () {
         
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
+
+
+            
         
-        if(sprite.img){
-            sprite.img.destroy();
-        }
         
         var begin_frame;
         
@@ -375,7 +385,7 @@ $(document).ready(function () {
                     begin_frame = 0;
                 } else if(resi_actuel == 1){
                     var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_6');
-                    begin_frame = 5
+                    begin_frame = 4
                 }
             break;
                 
@@ -403,6 +413,7 @@ $(document).ready(function () {
         cracks.animations.play('destroy', 20, false, true);
         cracks.animations.currentAnim.setFrame(begin_frame,true);
 
+            
         
         return destroy;
         
@@ -417,31 +428,30 @@ $(document).ready(function () {
     /* Méthode controller -> quand un évenement est joué / un block est cliqué */
 
 
-    function clickBlock(sprite){
-
+    function clickBlock(sprite) {
+        
         // block récupéré correspondant à la position du clic
-        var block = GameModel.getBlock(sprite.x,sprite.y);
+        var block = GameModel.getBlock(sprite.x, sprite.y);
+        
         // variable destroyed à vrai ou faux selon si le block est détruit ou non
         var destroyed = block.hitBlock();
 
-        //getResistanceState(block);
-
-        if(destroyed == true){
-
-
+        
+        
+        if (destroyed == true) {
+            
+            
             destroyBlockView(sprite);
+            
+            
+        } else if (destroyed == false && sprite.name != 'Bedrock') {
+            
 
+                crackBlockView(sprite);
 
-            // Res = 2
-        } else if(destroyed == false && sprite.name != 'Bedrock'){
-
-            crackBlockView(sprite);
+            updateText();
         }
-
-        updateText();
-
     }
-
 
 
 
