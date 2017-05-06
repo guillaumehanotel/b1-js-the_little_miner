@@ -12,7 +12,7 @@ $(document).ready(function () {
     
     const RESISTANCE_DIRT = 1;
     const RESISTANCE_BEDROCK = 9999;
-    const RESISTANCE_STONE = 2 ;
+    const RESISTANCE_STONE = 2;
     
 
     /* const proportions d'apparitions des blocks */
@@ -308,7 +308,9 @@ $(document).ready(function () {
         
         // quand l'animation est finie
         destroy.onComplete.add(function(){
-            
+            if(sprite.img){
+                sprite.img.destroy();
+            }
             crackImage(block, sprite);
             
         },this);
@@ -437,20 +439,12 @@ $(document).ready(function () {
         var destroyed = block.hitBlock();
 
         
-        
         if (destroyed == true) {
-            
-            
             destroyBlockView(sprite);
-            
-            
         } else if (destroyed == false && sprite.name != 'Bedrock') {
-            
-
-                crackBlockView(sprite);
-
-            updateText();
+            crackBlockView(sprite);
         }
+            updateText();
     }
 
 
