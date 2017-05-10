@@ -125,9 +125,19 @@ $(document).ready(function () {
     function create() {
         GameModel.createBlocks();
         loadGameView();
+        
+        /*
+        var graphics = game.add.graphics(0, 0);
+        graphics.beginFill(0x000000, 1); 
+        graphics.drawRect(200, 200, 60, 60);
+          */
     }
 
 
+    
+    
+    
+    
 
     /*********************************************************************************************/
     /* Méthode update */
@@ -169,6 +179,14 @@ $(document).ready(function () {
     /* Méthodes concernant la vue du jeu */
 
 
+    function hideBlock(block, graphics){
+        
+        if (block.isBreakable() == false) {
+            graphics.drawRect(block.location.x, block.location.y, 60, 60);
+        }
+       
+    }
+    
 
     /* FONCTION SERVANT A CREER GRAPHIQUEMENT LES BLOCKS */
     /**
@@ -180,6 +198,9 @@ $(document).ready(function () {
      *
      */
     function generateBlocksView() {
+        
+        var graphics = game.add.graphics(0, 0);
+        graphics.beginFill(0x000000, 1); 
 
         blocks = game.add.group();
 
@@ -194,6 +215,8 @@ $(document).ready(function () {
             // si les éléments ne sont pas détruit
             if (element.destroyed == false) {
 
+                hideBlock(element, graphics);
+                
                 // si l'ordonnée des éléments est sur la ligne de départ
                 if (element.location.y == START_Y) {
                     var sprite = blocks.create(element.location.x, element.location.y, 'grass_block');
@@ -210,6 +233,9 @@ $(document).ready(function () {
                 sprite.x = element.location.x;
                 sprite.y = element.location.y;
                 sprite.input.useHandCursor = true;
+                
+                game.world.bringToTop(graphics);
+                
             }
 
         });
@@ -219,6 +245,11 @@ $(document).ready(function () {
     }
 
     
+            /*
+        
+        graphics.beginFill(0x000000, 1); 
+        graphics.drawRect(200, 200, 60, 60);
+    */
     
     /**
      * Méthode de la vue : updateText
@@ -435,34 +466,24 @@ $(document).ready(function () {
         // block récupéré correspondant à la position du clic
         var block = GameModel.getBlock(sprite.x, sprite.y);
         
-        // variable destroyed à vrai ou faux selon si le block est détruit ou non
-        var destroyed = block.hitBlock();
-
+        block.printLocation();
         
-        if (destroyed == true) {
-            destroyBlockView(sprite);
-        } else if (destroyed == false && sprite.name != 'Bedrock') {
-            crackBlockView(sprite);
+        // si le block est cassable
+        if(block.isBreakable()){
+            
+            // variable destroyed à vrai ou faux selon si le block est détruit ou non
+            var destroyed = block.hitBlock();
+
+
+            if (destroyed == true) {
+                destroyBlockView(sprite);
+            } else if (destroyed == false && sprite.name != 'Bedrock') {
+                crackBlockView(sprite);
+            }
+                updateText();
         }
-            updateText();
+        
     }
-
-
-
-
-    /**
-     * Méthode pas fini
-     *
-     */
-    /*
-     function getResistanceState(block){
-         var original_resistance = block.getType().resistance;
-         console.log(original_resistance);
-     }
-*/
-
-    
-
 
 
 
@@ -505,6 +526,9 @@ $(document).ready(function () {
                 for (var i = 0; i < GAME_WIDTH; i += 60) {
                     var block = new Block(i, j)
                     block.setRandomType();
+                    if(j == START_Y){
+                        block.setBreakable(true);
+                    }
                     array_blocks.push(block);
                 }
             }
@@ -535,6 +559,7 @@ $(document).ready(function () {
             });
             return res;
         }
+        
 
     };
 
@@ -566,6 +591,7 @@ $(document).ready(function () {
      * - resistance -> nombre de coup qu'il faut pour détruire le block
      * - type       -> TYPEBLOCK enumeration pour définir le type du block
      * - destroyed  -> boolean disant si oui ou non le block esr détruit
+     * - breakable  -> boolean disant si il est cassable ou non
      */
     function Block(x, y) {
         this.height = 60;
@@ -575,6 +601,7 @@ $(document).ready(function () {
         this.resistance = null;
         this.type = null;
         this.destroyed = false;
+        this.breakable = false;
     }
 
     /**
@@ -643,11 +670,78 @@ $(document).ready(function () {
 
         this.resistance--;
         if(this.resistance == 0){
+            this.propagateBreakable();
             this.destroyed = true;
         }
 
         return this.destroyed;
 
+    }
+    
+    Block.prototype.getLeftBlock = function(){
+        var x = this.getX();
+        var y = this.getY();
+        // si la borne inférieur de x n'est pas à 0 (au minimum)
+        if(x != 0){
+            return GameModel.getBlock(x-60,y);
+        }
+    }
+    
+    Block.prototype.getRightBlock = function(){
+        
+        var x = this.getX();
+        var y = this.getY();
+        
+        // si la borne supérieur de x n'est pas à 360 (au max) (420)
+        if(x != 360){
+            return GameModel.getBlock(x+60,y);
+        }
+        
+    }
+    
+    Block.prototype.getTopBlock = function(){
+        
+        var x = this.getX();
+        var y = this.getY();
+        
+        // si la borne inférieur de y n'est pas au minimum de Y (360)
+        if(y != START_Y){
+            return GameModel.getBlock(x,y-60);
+        }
+        
+    }
+        
+        
+    Block.prototype.getBottomBlock = function(){
+        
+        var x = this.getX();
+        var y = this.getY();
+        
+        // si la borne supérieur de y n'est pas au max du jeu
+        if(y != GAME_HEIGHT-60){
+            return GameModel.getBlock(x,y+60);
+        }
+    }
+    
+    
+    Block.prototype.propagateBreakable = function(){
+        
+        if(typeof this.getBottomBlock() !== 'undefined'){
+            this.getBottomBlock().setBreakable(true);
+        }
+        
+        if(typeof this.getTopBlock() !== 'undefined'){
+            this.getTopBlock().setBreakable(true);
+        }
+        
+        if(typeof this.getLeftBlock() !== 'undefined'){
+            this.getLeftBlock().setBreakable(true);
+        }
+        
+        if(typeof this.getRightBlock() !== 'undefined'){
+            this.getRightBlock().setBreakable(true);
+        }
+        
     }
 
 
@@ -675,6 +769,22 @@ $(document).ready(function () {
     
     Block.prototype.getResistance = function(){
         return this.resistance;
+    }
+    
+    Block.prototype.isBreakable = function(){
+        return this.breakable;
+    }
+    
+    Block.prototype.setBreakable = function(bool){
+        this.breakable = bool;
+    }
+    
+    Block.prototype.getX = function(){
+        return this.location.x;
+    }
+    
+    Block.prototype.getY = function(){
+        return this.location.y;
     }
 
     /*********************************************************************************************/
