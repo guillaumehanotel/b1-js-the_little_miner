@@ -136,12 +136,6 @@ $(document).ready(function () {
     function create() {
         GameModel.createBlocks();
         loadGameView();
-
-        //destroyBlockView(getSprite(0,360));
-        
-        
-        
-        //console.log(getSprite(0,360).x);
         
     }
 
@@ -209,12 +203,9 @@ $(document).ready(function () {
 
     /* Méthode pour montrer le block pris en paramètre */
     function showBlock(sprite){
-        
-        console.log("destruction");
         if(typeof sprite.graph !== 'undefined'){
             sprite.graph.destroy();
-        }
-        
+        } 
     }
     
     
@@ -223,13 +214,9 @@ $(document).ready(function () {
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
         
-        var aroundBlocks = block.getAroundBlocks();
-        
-        console.log("elem autour : ");
-
+        var aroundBlocks = block.getAroundBlocks(); 
         
         aroundBlocks.forEach(function(element) {
-            element.printLocation();
             var sprite = getSprite(element.getX(), element.getY());
             showBlock(sprite);
         });
@@ -322,9 +309,6 @@ $(document).ready(function () {
 
                 hideBlock(element, graphics, sprite);
     
-                
-               // console.log(sprite.graph);
-                
                 game.world.bringToTop(graphics);
                 
                 game.sprites.push(sprite);
@@ -796,8 +780,6 @@ $(document).ready(function () {
      *
      */
     Block.prototype.hitBlock = function(){
-
-        this.printLocation();
 
         if(this.type == TYPEBLOCK.BONUS){
             GameModel.pioche+= 5;
