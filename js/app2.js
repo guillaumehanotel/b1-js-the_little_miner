@@ -39,6 +39,10 @@ $(document).ready(function () {
         game.load.image('tnt_block', 'assets/img/tnt_block.jpg');
         game.load.image('dynamite_block', 'assets/img/dynamite_block.jpg');
         game.load.image('bonus_block', 'assets/img/bonus_block.png');
+        game.load.image('coal_block', 'assets/img/coal_block.jpg');
+        game.load.image('gold_block', 'assets/img/gold_block.jpg');
+        game.load.image('iron_block', 'assets/img/iron_block.jpg');
+        game.load.image('diamond_block', 'assets/img/diamond_block.jpg');
 
         /*
         game.load.image('destroy_1', 'assets/img/destroy_stage_1.png');
@@ -203,6 +207,14 @@ $(document).ready(function () {
                     var sprite = blocks.create(element.location.x, element.location.y, 'dynamite_block')
                 } else if (element.type == TYPEBLOCK.BONUS) {
                     var sprite = blocks.create(element.location.x, element.location.y, 'bonus_block')
+                } else if (element.type == TYPEBLOCK.COAL) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'coal_block')
+                } else if (element.type == TYPEBLOCK.IRON) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'iron_block')
+                } else if (element.type == TYPEBLOCK.GOLD) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'gold_block')
+                } else if (element.type == TYPEBLOCK.DIAMOND) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'diamond_block')
                 }
                 
                 sprite.x = element.location.x;
@@ -392,7 +404,8 @@ $(document).ready(function () {
         }
 
     };
-
+    
+    
 
 
     /*********************************************************************************************/
@@ -438,24 +451,36 @@ $(document).ready(function () {
      */
      Block.prototype.setRandomType = function () {
          do {
-             var rand = Math.floor((Math.random() * 100) + 1);
-             if (rand >= 1 && rand < 75) {
+             var rand = Math.floor((Math.random() * 1000) + 1);
+             if (rand >= 1 && rand < 800) {
                  this.type = TYPEBLOCK.DIRT;
              }
-             else if (rand >= 75 && rand < 86) {
+             else if (rand >= 800 && rand < 900) {
                  this.type = TYPEBLOCK.STONE;
              }
-             else if (rand >= 86 && rand < 91) {
+             else if (rand >= 900 && rand < 910) {
                  this.type = TYPEBLOCK.BEDROCK;
              }
-             else if (rand >= 91 && rand < 94) {
+             else if (rand >= 910 && rand < 920) {
                  this.type = TYPEBLOCK.TNT;
              }
-             else if (rand >= 94 && rand < 97) {
+             else if (rand >= 920 && rand < 930) {
                  this.type = TYPEBLOCK.DYNAMITE;
              }
-             else if (rand >= 97 && rand <= 100) {
+             else if (rand >= 930 && rand < 940) {
                  this.type = TYPEBLOCK.BONUS;
+             }
+             else if (rand >= 940 && rand < 960) {
+                 this.type = TYPEBLOCK.COAL;
+             }
+             else if (rand >= 960 && rand < 975) {
+                 this.type = TYPEBLOCK.IRON;
+             }
+             else if (rand >= 975 && rand < 990) {
+                 this.type = TYPEBLOCK.GOLD;
+             }
+             else if (rand >= 990 && rand <= 1000) {
+                 this.type = TYPEBLOCK.DIAMOND;
              }
          } while (this.location.y == START_Y && this.type != TYPEBLOCK.DIRT)
         // Pour ne pas qu'un block de la première ligne soit autre chose d'un block dirt
@@ -486,9 +511,18 @@ $(document).ready(function () {
         case TYPEBLOCK.DYNAMITE:
             this.resistance = TYPEBLOCK.DYNAMITE.resistance;
             break;
-        case TYPEBLOCK.BONUS:
-            this.resistance = TYPEBLOCK.BONUS.resistance;
-            break;        
+        case TYPEBLOCK.COAL:
+            this.resistance = TYPEBLOCK.COAL.resistance;
+            break; 
+        case TYPEBLOCK.IRON:
+            this.resistance = TYPEBLOCK.IRON.resistance;
+            break; 
+        case TYPEBLOCK.GOLD:
+            this.resistance = TYPEBLOCK.GOLD.resistance;
+            break; 
+        case TYPEBLOCK.DIAMOND:
+            this.resistance = TYPEBLOCK.DIAMOND.resistance;
+            break; 
         default:
             this.resistance = 1;
             break;
@@ -570,7 +604,11 @@ $(document).ready(function () {
         BEDROCK: { name: "Bedrock" , resistance: 9999 },
         TNT: { name: "Tnt" , resistance: 1 },
         DYNAMITE: { name: "Dynamite" , resistance: 1 },
-        BONUS: { name: "Bonus" , resistance: 1 }
+        BONUS: { name: "Bonus" , resistance: 1 },
+        COAL: { name: "Coal" , resistance: 1 },
+        IRON: { name: "Iron" , resistance: 2 },
+        GOLD: { name: "Gold" , resistance: 3 },
+        DIAMOND: { name: "Diamond" , resistance: 4 }
     };
     /* impossibilité de changer les énumérations */
     Object.freeze(TYPEBLOCK);
