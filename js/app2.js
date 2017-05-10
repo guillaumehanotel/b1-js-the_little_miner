@@ -26,6 +26,7 @@ $(document).ready(function () {
     });
 
 
+    game.sprites = [];
     /*********************************************************************************************/
     /* Méthodes de prélodoage des images du jeu */
 
@@ -100,16 +101,21 @@ $(document).ready(function () {
         //game.time.slowMotion = 60.0;
 
         cursors = game.input.keyboard.createCursorKeys();
+        
+        
 
         // Création graphique des blocks
+        // retourne tableau de sprites
         generateBlocksView();
+        
+        
 
 
         scoreText = game.add.text(16, 16, 'Pioche: ' + GameModel.pioche, {
             fontSize: '23px',
             fill: '#fff'
         });
-
+        
 
     }
 
@@ -125,12 +131,13 @@ $(document).ready(function () {
     function create() {
         GameModel.createBlocks();
         loadGameView();
+
+        //destroyBlockView(getSprite(0,360));
         
-        /*
-        var graphics = game.add.graphics(0, 0);
-        graphics.beginFill(0x000000, 1); 
-        graphics.drawRect(200, 200, 60, 60);
-          */
+        
+        
+        //console.log(getSprite(0,360).x);
+        
     }
 
 
@@ -178,14 +185,69 @@ $(document).ready(function () {
     /*********************************************************************************************/
     /* Méthodes concernant la vue du jeu */
 
+    
+    function getSprite(x,y){
+        
+        var res = null;
+        
+        game.sprites.forEach(function(sprite) {
+           if(sprite.x == x && sprite.y == y){
+               res = sprite;
+           }
+        });
+        
+        return res;
+    }
+    
+    
+    
 
-    function hideBlock(block, graphics){
+    /* Méthode pour montrer le block pris en paramètre */
+    function showBlock(sprite){
+        
+        console.log("destruction");
+        if(typeof sprite.graph !== 'undefined'){
+            sprite.graph.destroy();
+        }
+        
+    }
+    
+    
+    
+    function showBlocks(sprite){
+        
+        var block = GameModel.getBlock(sprite.x, sprite.y);
+        
+        var aroundBlocks = block.getAroundBlocks();
+        
+        console.log("elem autour : ");
+
+        
+        aroundBlocks.forEach(function(element) {
+            element.printLocation();
+            var sprite = getSprite(element.getX(), element.getY());
+            showBlock(sprite);
+        });
+        
+    }
+    
+    
+    
+    
+    
+    
+    
+    /* Méthode pour cacher le block pris en paramètre */
+    function hideBlock(block, graphics, sprite){
         
         if (block.isBreakable() == false) {
-            graphics.drawRect(block.location.x, block.location.y, 60, 60);
+            var rect = graphics.drawRect(block.location.x, block.location.y, 60, 60);
+            sprite.graph = rect;
         }
-       
     }
+    
+    
+    
     
 
     /* FONCTION SERVANT A CREER GRAPHIQUEMENT LES BLOCKS */
@@ -199,8 +261,9 @@ $(document).ready(function () {
      */
     function generateBlocksView() {
         
-        var graphics = game.add.graphics(0, 0);
-        graphics.beginFill(0x000000, 1); 
+        //var sprites = [];
+        
+
 
         blocks = game.add.group();
 
@@ -211,12 +274,14 @@ $(document).ready(function () {
         var arrayBlocks = GameModel.blocks;
 
         arrayBlocks.forEach(function (element) {
+            
+            
+            var graphics = game.add.graphics(0, 0);
+            graphics.beginFill(0x000000, 1); 
 
             // si les éléments ne sont pas détruit
             if (element.destroyed == false) {
 
-                hideBlock(element, graphics);
-                
                 // si l'ordonnée des éléments est sur la ligne de départ
                 if (element.location.y == START_Y) {
                     var sprite = blocks.create(element.location.x, element.location.y, 'grass_block');
@@ -234,7 +299,16 @@ $(document).ready(function () {
                 sprite.y = element.location.y;
                 sprite.input.useHandCursor = true;
                 
+
+                hideBlock(element, graphics, sprite);
+    
+                
+               // console.log(sprite.graph);
+                
                 game.world.bringToTop(graphics);
+                
+                game.sprites.push(sprite);
+
                 
             }
 
@@ -331,11 +405,7 @@ $(document).ready(function () {
     function crackBlockView(sprite){
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
-        
-        
         var destroy = crackAnimation(block, sprite);
-        
-        
         
         // quand l'animation est finie
         destroy.onComplete.add(function(){
@@ -344,9 +414,9 @@ $(document).ready(function () {
             }
             crackImage(block, sprite);
             
-        },this);
-          
+        },this);   
     }
+    
     
     
     // l'image qui restera affiché après la fin de l'animation
@@ -354,15 +424,12 @@ $(document).ready(function () {
         
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
-
-
         
         switch(resi_init){
             case 2 : 
                 sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_5');
             break;
-                
-                
+                   
             case 3 : 
                 if(resi_actuel == 2){
                     sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_3');
@@ -370,7 +437,6 @@ $(document).ready(function () {
                     sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_6');
                 }
             break;
-                
                 
             case 4 :
                 if(resi_actuel == 3){
@@ -386,9 +452,6 @@ $(document).ready(function () {
             break;
         
         }
-            
-        
-            
     }
     
     
@@ -398,10 +461,6 @@ $(document).ready(function () {
         
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
-
-
-            
-        
         
         var begin_frame;
         
@@ -410,7 +469,6 @@ $(document).ready(function () {
                 var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_4');
                 begin_frame = 0;
             break;
-                
                 
             case 3 : 
                 if(resi_actuel == 2){
@@ -421,7 +479,6 @@ $(document).ready(function () {
                     begin_frame = 4
                 }
             break;
-                
                 
             case 4 :
                 if(resi_actuel == 3){
@@ -446,11 +503,12 @@ $(document).ready(function () {
         cracks.animations.play('destroy', 20, false, true);
         cracks.animations.currentAnim.setFrame(begin_frame,true);
 
-            
-        
         return destroy;
         
     }
+    
+    
+
     
     
     
@@ -473,10 +531,11 @@ $(document).ready(function () {
             
             // variable destroyed à vrai ou faux selon si le block est détruit ou non
             var destroyed = block.hitBlock();
-
+            
 
             if (destroyed == true) {
                 destroyBlockView(sprite);
+                 showBlocks(sprite);
             } else if (destroyed == false && sprite.name != 'Bedrock') {
                 crackBlockView(sprite);
             }
@@ -726,24 +785,37 @@ $(document).ready(function () {
     
     Block.prototype.propagateBreakable = function(){
         
-        if(typeof this.getBottomBlock() !== 'undefined'){
-            this.getBottomBlock().setBreakable(true);
-        }
+        var array = this.getAroundBlocks();
         
-        if(typeof this.getTopBlock() !== 'undefined'){
-            this.getTopBlock().setBreakable(true);
-        }
-        
-        if(typeof this.getLeftBlock() !== 'undefined'){
-            this.getLeftBlock().setBreakable(true);
-        }
-        
-        if(typeof this.getRightBlock() !== 'undefined'){
-            this.getRightBlock().setBreakable(true);
-        }
+        array.forEach(function (element) {
+            element.setBreakable(true);
+        });
         
     }
 
+    Block.prototype.getAroundBlocks = function(){
+        
+        var arrayBlocks = [];
+        
+        if(typeof this.getBottomBlock() !== 'undefined'){
+            arrayBlocks.push(this.getBottomBlock());
+        }
+        
+        if(typeof this.getTopBlock() !== 'undefined'){
+            arrayBlocks.push(this.getTopBlock());
+        }
+        
+        if(typeof this.getLeftBlock() !== 'undefined'){
+            arrayBlocks.push(this.getLeftBlock());
+        }
+        
+        if(typeof this.getRightBlock() !== 'undefined'){
+            arrayBlocks.push(this.getRightBlock());
+        }
+        
+        return arrayBlocks;
+        
+    }
 
 
     /**
