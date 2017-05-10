@@ -28,9 +28,6 @@ $(document).ready(function() {
     
     
     
-    
-    
-    
 
     // LA STRUCTURE DU JEU  
     var GameLogic = {

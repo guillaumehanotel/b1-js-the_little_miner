@@ -27,8 +27,6 @@ $(document).ready(function () {
 
 
     /*********************************************************************************************/
-    /* Méthodes de prélodoage des images du jeu */
-
 
     /**
      * Méthode de la vue : loadImages
@@ -43,6 +41,13 @@ $(document).ready(function () {
         game.load.image('grass_block', 'assets/img/grass_block.png');
         game.load.image('stone_block', 'assets/img/stone_block.jpg');
         game.load.image('bedrock_block', 'assets/img/bedrock_block.png');
+        game.load.image('tnt_block', 'assets/img/tnt_block.jpg');
+        game.load.image('dynamite_block', 'assets/img/dynamite_block.jpg');
+        game.load.image('bonus_block', 'assets/img/bonus_block.png');
+        game.load.image('coal_block', 'assets/img/coal_block.jpg');
+        game.load.image('gold_block', 'assets/img/gold_block.jpg');
+        game.load.image('iron_block', 'assets/img/iron_block.jpg');
+        game.load.image('diamond_block', 'assets/img/diamond_block.jpg');
 
         
         game.load.image('destroy_1', 'assets/img/destroy_stage_1.png');
@@ -203,7 +208,22 @@ $(document).ready(function () {
                 } else if (element.type == TYPEBLOCK.STONE) {
                     var sprite = blocks.create(element.location.x, element.location.y, 'stone_block')
                 } else if (element.type == TYPEBLOCK.BEDROCK) {
-                    var sprite = blocks.create(element.location.x, element.location.y, 'bedrock_block') 
+                    var sprite = blocks.create(element.location.x, element.location.y, 'bedrock_block')
+                } else if (element.type == TYPEBLOCK.TNT) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'tnt_block')
+                } else if (element.type == TYPEBLOCK.DYNAMITE) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'dynamite_block')
+                } else if (element.type == TYPEBLOCK.BONUS) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'bonus_block')
+                } else if (element.type == TYPEBLOCK.COAL) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'coal_block')
+                } else if (element.type == TYPEBLOCK.IRON) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'iron_block')
+                } else if (element.type == TYPEBLOCK.GOLD) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'gold_block')
+                } else if (element.type == TYPEBLOCK.DIAMOND) {
+                    var sprite = blocks.create(element.location.x, element.location.y, 'diamond_block')
+
                 }
                 
                 sprite.name = element.type.name;
@@ -534,10 +554,27 @@ $(document).ready(function () {
                 }
             });
             return res;
+        },
+        
+        getBlocksByProfondeur: function(prof){
+            var res_blocks=[];
+            
+            this.blocks.forEach(function (block) {
+                if(block.profondeur == prof ){
+                    res_blocks.push(block);
+                }
+            });
+            
+            return res_blocks;
+        },
+        
+        destroyDynamite: function(){
+            
         }
 
     };
-
+    
+    
 
 
     /*********************************************************************************************/
@@ -583,15 +620,36 @@ $(document).ready(function () {
      */
      Block.prototype.setRandomType = function () {
          do {
-             var rand = Math.floor((Math.random() * 100) + 1);
-             if (rand >= 1 && rand < 85) {
+             var rand = Math.floor((Math.random() * 1000) + 1);
+             if (rand >= 1 && rand < 800) {
                  this.type = TYPEBLOCK.DIRT;
              }
-             else if (rand >= 85 && rand < 98) {
+             else if (rand >= 800 && rand < 900) {
                  this.type = TYPEBLOCK.STONE;
              }
-             else if (rand >= 98 && rand <= 100) {
+             else if (rand >= 900 && rand < 910) {
                  this.type = TYPEBLOCK.BEDROCK;
+             }
+             else if (rand >= 910 && rand < 920) {
+                 this.type = TYPEBLOCK.TNT;
+             }
+             else if (rand >= 920 && rand < 930) {
+                 this.type = TYPEBLOCK.DYNAMITE;
+             }
+             else if (rand >= 930 && rand < 940) {
+                 this.type = TYPEBLOCK.BONUS;
+             }
+             else if (rand >= 940 && rand < 960) {
+                 this.type = TYPEBLOCK.COAL;
+             }
+             else if (rand >= 960 && rand < 975) {
+                 this.type = TYPEBLOCK.IRON;
+             }
+             else if (rand >= 975 && rand < 990) {
+                 this.type = TYPEBLOCK.GOLD;
+             }
+             else if (rand >= 990 && rand <= 1000) {
+                 this.type = TYPEBLOCK.DIAMOND;
              }
          } while (this.location.y == START_Y && this.type != TYPEBLOCK.DIRT)
         // Pour ne pas qu'un block de la première ligne soit autre chose d'un block dirt
@@ -618,6 +676,24 @@ $(document).ready(function () {
         case TYPEBLOCK.BEDROCK:
             this.resistance = TYPEBLOCK.BEDROCK.resistance;
             break;
+        case TYPEBLOCK.TNT:
+            this.resistance = TYPEBLOCK.TNT.resistance;
+            break;
+        case TYPEBLOCK.DYNAMITE:
+            this.resistance = TYPEBLOCK.DYNAMITE.resistance;
+            break;
+        case TYPEBLOCK.COAL:
+            this.resistance = TYPEBLOCK.COAL.resistance;
+            break; 
+        case TYPEBLOCK.IRON:
+            this.resistance = TYPEBLOCK.IRON.resistance;
+            break; 
+        case TYPEBLOCK.GOLD:
+            this.resistance = TYPEBLOCK.GOLD.resistance;
+            break; 
+        case TYPEBLOCK.DIAMOND:
+            this.resistance = TYPEBLOCK.DIAMOND.resistance;
+            break; 
         default:
             this.resistance = 1;
             break;
@@ -637,7 +713,10 @@ $(document).ready(function () {
 
         this.printLocation();
 
-        if(this.type != TYPEBLOCK.BEDROCK){
+        if(this.type == TYPEBLOCK.BONUS){
+            GameModel.pioche+= 5;
+        }
+        else if(this.type != TYPEBLOCK.BEDROCK){
             GameModel.pioche--;
         }
 
@@ -660,7 +739,7 @@ $(document).ready(function () {
         console.log("(" + this.location.x + "," + this.location.y + ")");
     }
 
-
+    
     /**
      * Méthode de Block : getType
      * retourne le type du block
@@ -673,9 +752,22 @@ $(document).ready(function () {
         return this.type.resistance;
     }
     
+    //Méthode de Block : TNT
+    
+    /*Block.prototype.destructionTNTBlock = function(x,y){
+        var block = GameModel.getBlock(x,y);
+        var destroyBlock = [];
+        destroyBlock.push(block);
+        destroyBlock.push()
+    }*/
+    
+    
+    
+
     Block.prototype.getResistance = function(){
         return this.resistance;
     }
+
 
     /*********************************************************************************************/
     /* Enumération des blocks */
@@ -686,9 +778,18 @@ $(document).ready(function () {
      * défini les types de blocs disponibles avec leurs noms et leurs résistances
      */
     var TYPEBLOCK = {
-        DIRT: { name: "Dirt", resistance: RESISTANCE_DIRT },
-        STONE: { name: "Stone" , resistance: RESISTANCE_STONE },
-        BEDROCK: { name: "Bedrock" , resistance: RESISTANCE_BEDROCK }
+
+        DIRT: { name: "Dirt", resistance: 1 },
+        STONE: { name: "Stone" , resistance: 2 },
+        BEDROCK: { name: "Bedrock" , resistance: 9999 },
+        TNT: { name: "Tnt" , resistance: 1 },
+        DYNAMITE: { name: "Dynamite" , resistance: 1 },
+        BONUS: { name: "Bonus" , resistance: 1 },
+        COAL: { name: "Coal" , resistance: 1 },
+        IRON: { name: "Iron" , resistance: 2 },
+        GOLD: { name: "Gold" , resistance: 3 },
+        DIAMOND: { name: "Diamond" , resistance: 4 }
+
     };
     /* impossibilité de changer les énumérations */
     Object.freeze(TYPEBLOCK);
