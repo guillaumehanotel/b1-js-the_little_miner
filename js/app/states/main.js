@@ -1,76 +1,73 @@
-$(document).ready(function () {
+
+var theGame = function(game){
+    
+}
 
 
 
-    /* const proportions d'apparitions des blocks */
-
-
-
-    var game = new Phaser.Game(GAME_WIDTH, FRAME_HEIGHT, Phaser.AUTO, '', {
-        preload: preload,
-        create: create,
-        update: update
-    });
-
-
-    game.sprites = [];
-    /*********************************************************************************************/
-
-    /**
-     * Méthode de la vue : loadImages
-     * Sert à loader les images et sprites utilisés dans le jeu
-     */
-    function loadImages() {
-
-        game.load.image('sky', 'assets/img/little_sky.png');
-        game.load.image('ground', 'assets/img/ground.png');
-
-        game.load.image('dirt_block', 'assets/img/dirt_block.jpg');
-        game.load.image('grass_block', 'assets/img/grass_block.png');
-        game.load.image('stone_block', 'assets/img/stone_block.jpg');
-        game.load.image('bedrock_block', 'assets/img/bedrock_block.png');
-        game.load.image('tnt_block', 'assets/img/tnt_block.jpg');
-        game.load.image('dynamite_block', 'assets/img/dynamite_block.jpg');
-        game.load.image('bonus_block', 'assets/img/bonus_block.png');
-        game.load.image('coal_block', 'assets/img/coal_block.jpg');
-        game.load.image('gold_block', 'assets/img/gold_block.jpg');
-        game.load.image('iron_block', 'assets/img/iron_block.jpg');
-        game.load.image('diamond_block', 'assets/img/diamond_block.jpg');
-
+theGame.prototype = {
+    
+    create: function(){
         
-        game.load.image('destroy_1', 'assets/img/destroy_stage_1.png');
-        game.load.image('destroy_2', 'assets/img/destroy_stage_2.png');
-        game.load.image('destroy_3', 'assets/img/destroy_stage_3.png');
-        game.load.image('destroy_4', 'assets/img/destroy_stage_4.png');
-        game.load.image('destroy_5', 'assets/img/destroy_stage_5.png');
-        game.load.image('destroy_6', 'assets/img/destroy_stage_6.png');
-        game.load.image('destroy_7', 'assets/img/destroy_stage_7.png');
-        game.load.image('destroy_8', 'assets/img/destroy_stage_8.png');
-        game.load.image('destroy_9', 'assets/img/destroy_stage_9.png');
+        GameModel.createBlocks();
+        this.loadGameView();
+        
+    }, 
+    update: function(){
+        
+        // Au premier block cliqué, la fenetre descend
+        
+        /*
+        game.camera.y += 1;
+        scoreText.y = game.camera.y;
+        */
+        
+        // Condition de fin d'arret du jeu
+        if (GameModel.pioche <= 0) {
+            //scoreText.setText("Game Over");
+            this.game.state.start("GameOver");
+        }
+        
+        // Déplacement au curseur pour le débuggage
+        if (cursors.up.isDown) {
+            game.camera.y -= 4;
+        }
+        else if (cursors.down.isDown) {
+            game.camera.y += 4;
+        }
+        scoreText.y = game.camera.y;
+    },
+    
+    
+    loadGameView: function(){
+        
+        this.game.physics.startSystem(Phaser.Physics.ARCADE);
+        // On ajoute le sprite du ciel à partir de la position (0,0)
+        this.game.add.sprite(0, 0, 'sky');
+        // On ajoute le sprite du sol à partir de la position (0,360)
+        this.game.add.sprite(0, START_Y, 'ground');
+        // On défini les limites du jeu s'arretant à 1280px de profondeur
+        this.game.world.setBounds(0, 0, 0, GAME_HEIGHT);
+        //game.time.slowMotion = 60.0;
+
+        cursors = this.game.input.keyboard.createCursorKeys();
+        
         
 
-        game.load.spritesheet('destroy_all', 'assets/img/destroy_stage_all.png', 60, 60, 10);
+        // Création graphique des blocks
+        // retourne tableau de sprites
+        generateBlocksView();
         
-        game.load.spritesheet('destroy_to_1', 'assets/img/destroy_stage_to_1.png', 60, 60, 2);
-        game.load.spritesheet('destroy_to_3', 'assets/img/destroy_stage_to_3.png', 60, 60, 4);
-        game.load.spritesheet('destroy_to_4', 'assets/img/destroy_stage_to_4.png', 60, 60, 5);
-        game.load.spritesheet('destroy_to_6', 'assets/img/destroy_stage_to_6.png', 60, 60, 7);
 
+        scoreText = this.game.add.text(16, 16, 'Pioche: ' + GameModel.pioche, {
+            fontSize: '23px',
+            fill: '#fff'
+        });
+        
 
     }
-
-
-
-
-    /**
-     * Méthode du jeu Phaser : preload
-     * Appel la fonction d'initialiation des images
-     */
-    function preload() {
-        loadImages();
-    }
-
-
+    
+}
 
     /*********************************************************************************************/
     /* Méthodes de la création grahique du jeu */
@@ -81,94 +78,16 @@ $(document).ready(function () {
      * Sert à initialiser le jeu en y ajoutant les sprites et affichage de base
      *
      */
-    function loadGameView() {
+    /*function loadGameView() {
 
-        game.physics.startSystem(Phaser.Physics.ARCADE);
-        // On ajoute le sprite du ciel à partir de la position (0,0)
-        game.add.sprite(0, 0, 'sky');
-        // On ajoute le sprite du sol à partir de la position (0,360)
-        game.add.sprite(0, START_Y, 'ground');
-        // On défini les limites du jeu s'arretant à 1280px de profondeur
-        game.world.setBounds(0, 0, 0, GAME_HEIGHT);
-        //game.time.slowMotion = 60.0;
-
-        cursors = game.input.keyboard.createCursorKeys();
-        
-        
-
-        // Création graphique des blocks
-        // retourne tableau de sprites
-        generateBlocksView();
-        
-        
-
-
-        scoreText = game.add.text(16, 16, 'Pioche: ' + GameModel.pioche, {
-            fontSize: '23px',
-            fill: '#fff'
-        });
-        
 
     }
+*/
 
 
 
 
-    /**
-     * Méthode du jeu Phaser : create
-     * Sert à initialiser le jeu et les graphiques :
-     * - Initialise la liste des blocks de GameModel
-     * - Appel la fonction loadGameView
-     */
-    function create() {
-        GameModel.createBlocks();
-        loadGameView();
-        
-    }
-
-
-    
-    
-    
-    
-
-    /*********************************************************************************************/
-    /* Méthode update */
-
-
-
-    /**
-     * Méthode du jeu Phaser : update
-     * Sert à mettre à jour le jeu
-     * contient la condition de fin du jeu ?
-     *
-     */
-    function update() {
-        // Au premier block cliqué, la fenetre descend
-        
-        /*
-        game.camera.y += 1;
-        scoreText.y = game.camera.y;
-        */
-        
-        // Condition de fin d'arret du jeu
-        if (GameModel.pioche <= 0) {
-            scoreText.setText("Game Over");
-        }
-        // Déplacement au curseur pour le débuggage
-        if (cursors.up.isDown) {
-            game.camera.y -= 4;
-        }
-        else if (cursors.down.isDown) {
-            game.camera.y += 4;
-        }
-        scoreText.y = game.camera.y;
-    }
-
-
-
-
-    /*********************************************************************************************/
+  /*********************************************************************************************/
     /* Méthodes concernant la vue du jeu */
 
     
@@ -537,7 +456,3 @@ $(document).ready(function () {
 
 
 
-
-
-
-});

@@ -1,7 +1,4 @@
 
-
-
-
     /**
      * ENUMERATION TYPEBLOCK
      * défini les types de blocs disponibles avec leurs noms et leurs résistances
