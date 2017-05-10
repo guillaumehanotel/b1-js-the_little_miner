@@ -4,8 +4,6 @@ $(document).ready(function () {
     var game = new Phaser.Game(GAME_WIDTH, FRAME_HEIGHT, Phaser.AUTO, 'game');
     
     
-    game.sprites = [];
-    
     
     game.state.add("Preload", preload);
     

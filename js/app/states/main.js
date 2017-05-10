@@ -1,6 +1,6 @@
 
 var theGame = function(game){
-    
+    sprites = [];
 }
 
 
@@ -9,10 +9,15 @@ theGame.prototype = {
     
     create: function(){
         
+        GameModel.reset();
         GameModel.createBlocks();
         this.loadGameView();
         
     }, 
+    
+    
+    
+    
     update: function(){
         
         // Au premier block cliqué, la fenetre descend
@@ -30,15 +35,29 @@ theGame.prototype = {
         
         // Déplacement au curseur pour le débuggage
         if (cursors.up.isDown) {
-            game.camera.y -= 4;
+            this.game.camera.y -= 4;
         }
         else if (cursors.down.isDown) {
-            game.camera.y += 4;
+            this.game.camera.y += 4;
         }
-        scoreText.y = game.camera.y;
+        scoreText.y = this.game.camera.y;
     },
     
     
+    
+    
+    
+    
+    
+     /*********************************************************************************************/
+    /* Méthodes de la création grahique du jeu */
+    
+    
+    /**
+     * Méthode de la vue : loadGameView
+     * Sert à initialiser le jeu en y ajoutant les sprites et affichage de base
+     *
+     */
     loadGameView: function(){
         
         this.game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -56,7 +75,7 @@ theGame.prototype = {
 
         // Création graphique des blocks
         // retourne tableau de sprites
-        generateBlocksView();
+        this.generateBlocksView(this.game, this);
         
 
         scoreText = this.game.add.text(16, 16, 'Pioche: ' + GameModel.pioche, {
@@ -65,90 +84,65 @@ theGame.prototype = {
         });
         
 
-    }
+    },
     
-}
-
-    /*********************************************************************************************/
-    /* Méthodes de la création grahique du jeu */
-
-
-    /**
-     * Méthode de la vue : loadGameView
-     * Sert à initialiser le jeu en y ajoutant les sprites et affichage de base
-     *
-     */
-    /*function loadGameView() {
-
-
-    }
-*/
-
-
-
-
-  /*********************************************************************************************/
-    /* Méthodes concernant la vue du jeu */
-
     
-    function getSprite(x,y){
-        
+    
+    getSprite : function(x,y){
         var res = null;
         
-        game.sprites.forEach(function(sprite) {
+        sprites.forEach(function(sprite) {
            if(sprite.x == x && sprite.y == y){
                res = sprite;
            }
         });
         
         return res;
-    }
+    },
     
     
-    
-
     /* Méthode pour montrer le block pris en paramètre */
-    function showBlock(sprite){
+    showBlock : function(sprite){
         if(typeof sprite.graph !== 'undefined'){
             sprite.graph.destroy();
         } 
-    }
+    },
     
     
     
-    function showBlocks(sprite){
+    
+    
+    showBlocks : function(sprite, self){
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
         
         var aroundBlocks = block.getAroundBlocks(); 
         
         aroundBlocks.forEach(function(element) {
-            var sprite = getSprite(element.getX(), element.getY());
-            showBlock(sprite);
+            var sprite = self.getSprite(element.getX(), element.getY());
+            self.showBlock(sprite);
         });
+    },
+    
+   
+    
+    
         
-    }
-    
-    
-    
-    
-    
-    
-    
     /* Méthode pour cacher le block pris en paramètre */
-    function hideBlock(block, graphics, sprite){
+    hideBlock : function(block, graphics, sprite){
         
         if (block.isBreakable() == false) {
             var rect = graphics.drawRect(block.location.x, block.location.y, 60, 60);
             sprite.graph = rect;
         }
-    }
+    },
     
     
     
     
-
-    /* FONCTION SERVANT A CREER GRAPHIQUEMENT LES BLOCKS */
+    
+    
+        /* FONCTION SERVANT A CREER GRAPHIQUEMENT LES BLOCKS */
     /**
      * Méthode de la vue : generateBlocksView
      * Fonction servant à créer graphiquement chaque block
@@ -157,11 +151,9 @@ theGame.prototype = {
      *
      *
      */
-    function generateBlocksView() {
+    generateBlocksView : function(game, self) {
         
         //var sprites = [];
-        
-
 
         blocks = game.add.group();
 
@@ -213,11 +205,11 @@ theGame.prototype = {
                 sprite.input.useHandCursor = true;
                 
 
-                hideBlock(element, graphics, sprite);
+                self.hideBlock(element, graphics, sprite);
     
                 game.world.bringToTop(graphics);
                 
-                game.sprites.push(sprite);
+                sprites.push(sprite);
 
                 
             }
@@ -225,34 +217,29 @@ theGame.prototype = {
         });
 
         // ajout d'un listener onClick pour chaque sprite
-        blocks.onChildInputDown.add(clickBlock, this);
-    }
+        blocks.onChildInputDown.add(self.clickBlock, this);
+    },
+    
 
-    
-            /*
-        
-        graphics.beginFill(0x000000, 1); 
-        graphics.drawRect(200, 200, 60, 60);
-    */
-    
     /**
      * Méthode de la vue : updateText
      * Sert à mettre à jour le texte du nombre de coup restant
      */
-    function updateText(){
+    updateText : function(){
         scoreText.setText("Pioche: "+GameModel.pioche);
-    }
+    },
 
 
-
+    
+    
     /********************************************/
     /* Animation Destruction */
 
 
-    function destroyBlockView(sprite){
+    destroyBlockView : function(sprite){
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
-        var destroy = destroyAnimation(block, sprite);
+        var destroy = this.destroyAnimation(block, sprite);
         
         
         destroy.onComplete.add(function(){
@@ -261,14 +248,14 @@ theGame.prototype = {
             }
             sprite.destroy();
         },this);
-    }
+    },
 
 
     
     
     
 
-    function destroyAnimation(block, sprite){
+    destroyAnimation : function(block, sprite){
         
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
@@ -279,7 +266,7 @@ theGame.prototype = {
         }
         
         var begin_frame;
-        var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_all');
+        var cracks = this.game.add.sprite(sprite.x,sprite.y,'destroy_all');
         
         switch(resi_init){
             case 2 :
@@ -303,7 +290,7 @@ theGame.prototype = {
 
         return destroy;
 
-    }
+    },
 
 
     
@@ -312,49 +299,49 @@ theGame.prototype = {
     /*********************************************/
     /* Animation Fissurage */
     
-    function crackBlockView(sprite){
+    crackBlockView : function(sprite){
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
-        var destroy = crackAnimation(block, sprite);
+        var destroy = this.crackAnimation(block, sprite);
         
         // quand l'animation est finie
         destroy.onComplete.add(function(){
             if(sprite.img){
                 sprite.img.destroy();
             }
-            crackImage(block, sprite);
+            this.crackImage(block, sprite);
             
         },this);   
-    }
+    },
     
     
     
     // l'image qui restera affiché après la fin de l'animation
-    function crackImage(block, sprite){
+    crackImage : function(block, sprite){
         
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
         
         switch(resi_init){
             case 2 : 
-                sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_5');
+                sprite.img = this.game.add.sprite(sprite.x,sprite.y,'destroy_5');
             break;
                    
             case 3 : 
                 if(resi_actuel == 2){
-                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_3');
+                    sprite.img = this.game.add.sprite(sprite.x,sprite.y,'destroy_3');
                 } else if(resi_actuel == 1){
-                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_6');
+                    sprite.img = this.game.add.sprite(sprite.x,sprite.y,'destroy_6');
                 }
             break;
                 
             case 4 :
                 if(resi_actuel == 3){
-                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_2');
+                    sprite.img = this.game.add.sprite(sprite.x,sprite.y,'destroy_2');
                 } else if(resi_actuel == 2){
-                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_4');
+                    sprite.img = this.game.add.sprite(sprite.x,sprite.y,'destroy_4');
                 } else if(resi_actuel == 1){
-                    sprite.img = game.add.sprite(sprite.x,sprite.y,'destroy_6');
+                    sprite.img = this.game.add.sprite(sprite.x,sprite.y,'destroy_6');
                 }
             break;
                 
@@ -362,12 +349,12 @@ theGame.prototype = {
             break;
         
         }
-    }
+    },
     
     
     
     // retourne l'animation
-    function crackAnimation(block, sprite){
+    crackAnimation : function(block, sprite){
         
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
@@ -376,29 +363,29 @@ theGame.prototype = {
         
         switch(resi_init){
             case 2 : 
-                var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_4');
+                var cracks = this.game.add.sprite(sprite.x,sprite.y,'destroy_to_4');
                 begin_frame = 0;
             break;
                 
             case 3 : 
                 if(resi_actuel == 2){
-                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_3');
+                    var cracks = this.game.add.sprite(sprite.x,sprite.y,'destroy_to_3');
                     begin_frame = 0;
                 } else if(resi_actuel == 1){
-                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_6');
+                    var cracks = this.game.add.sprite(sprite.x,sprite.y,'destroy_to_6');
                     begin_frame = 4
                 }
             break;
                 
             case 4 :
                 if(resi_actuel == 3){
-                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_1');
+                    var cracks = this.game.add.sprite(sprite.x,sprite.y,'destroy_to_1');
                     begin_frame = 0;
                 } else if(resi_actuel == 2){
-                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_4');
+                    var cracks = this.game.add.sprite(sprite.x,sprite.y,'destroy_to_4');
                     begin_frame = 3;
                 } else if(resi_actuel == 1){
-                    var cracks = game.add.sprite(sprite.x,sprite.y,'destroy_to_6');
+                    var cracks = this.game.add.sprite(sprite.x,sprite.y,'destroy_to_6');
                     begin_frame = 5;
                 }
             break;
@@ -415,12 +402,9 @@ theGame.prototype = {
 
         return destroy;
         
-    }
+    },
     
-    
-
-    
-    
+        
     
     
     /************************************************************************************/
@@ -429,7 +413,7 @@ theGame.prototype = {
     /* Méthode controller -> quand un évenement est joué / un block est cliqué */
 
 
-    function clickBlock(sprite) {
+    clickBlock : function(sprite) {
         
         // block récupéré correspondant à la position du clic
         var block = GameModel.getBlock(sprite.x, sprite.y);
@@ -444,15 +428,29 @@ theGame.prototype = {
             
 
             if (destroyed == true) {
-                destroyBlockView(sprite);
-                 showBlocks(sprite);
+                this.destroyBlockView(sprite);
+                this.showBlocks(sprite, this);
             } else if (destroyed == false && sprite.name != 'Bedrock') {
-                crackBlockView(sprite);
+                this.crackBlockView(sprite);
             }
-                updateText();
+                this.updateText();
         }
         
     }
+    
+}
+
+   
+
+
+
+
+
+
+
+    
+
+    
 
 
 

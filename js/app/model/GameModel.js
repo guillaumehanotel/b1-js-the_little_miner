@@ -81,6 +81,11 @@
         
         destroyDynamite: function(){
             
+        },
+        
+        reset : function(){
+            this.blocks = null;
+            this.pioche = PICKER_NB_HIT;
         }
         
 
