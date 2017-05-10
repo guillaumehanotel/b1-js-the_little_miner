@@ -13,6 +13,13 @@ $(document).ready(function () {
     const RESISTANCE_DIRT = 1;
     const RESISTANCE_BEDROCK = 9999;
     const RESISTANCE_STONE = 2;
+    const RESISTANCE_COAL = 1;
+    const RESISTANCE_IRON = 2;
+    const RESISTANCE_GOLD = 3;
+    const RESISTANCE_DIAMOND = 4;
+    const RESISTANCE_TNT = 1;
+    const RESISTANCE_BONUS = 1;
+    const RESISTANCE_DYNAMITE = 1;
     
 
     /* const proportions d'apparitions des blocks */
@@ -943,16 +950,16 @@ $(document).ready(function () {
      */
     var TYPEBLOCK = {
 
-        DIRT: { name: "Dirt", resistance: 1 },
-        STONE: { name: "Stone" , resistance: 2 },
-        BEDROCK: { name: "Bedrock" , resistance: 9999 },
-        TNT: { name: "Tnt" , resistance: 1 },
-        DYNAMITE: { name: "Dynamite" , resistance: 1 },
-        BONUS: { name: "Bonus" , resistance: 1 },
-        COAL: { name: "Coal" , resistance: 1 },
-        IRON: { name: "Iron" , resistance: 2 },
-        GOLD: { name: "Gold" , resistance: 3 },
-        DIAMOND: { name: "Diamond" , resistance: 4 }
+        DIRT: { name: "Dirt", resistance: RESISTANCE_DIRT },
+        STONE: { name: "Stone" , resistance: RESISTANCE_STONE },
+        BEDROCK: { name: "Bedrock" , resistance: RESISTANCE_BEDROCK },
+        TNT: { name: "Tnt" , resistance: RESISTANCE_TNT },
+        DYNAMITE: { name: "Dynamite" , resistance: RESISTANCE_DYNAMITE },
+        BONUS: { name: "Bonus" , resistance: RESISTANCE_BONUS },
+        COAL: { name: "Coal" , resistance: RESISTANCE_COAL },
+        IRON: { name: "Iron" , resistance: RESISTANCE_IRON },
+        GOLD: { name: "Gold" , resistance: RESISTANCE_GOLD },
+        DIAMOND: { name: "Diamond" , resistance: RESISTANCE_DIAMOND }
 
     };
     /* impossibilité de changer les énumérations */
