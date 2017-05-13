@@ -1,2 +1,2 @@
-# pocket_mine
+# The Little Miner
 Javascript Game using Canvas
