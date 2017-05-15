@@ -1,6 +1,7 @@
 
 var theGame = function(game){
     sprites = [];
+    miner = 0;
 }
 
 
@@ -9,9 +10,37 @@ theGame.prototype = {
     
     create: function(){
         
+        //this.game.physics.startSystem(Phaser.Physics.ARCADE);
+        
+        
         GameModel.reset();
         GameModel.createBlocks();
         this.loadGameView();
+        
+        
+        
+        
+        
+        this.miner = this.game.add.sprite(60,280,'miner');
+        /*
+        var mine = this.miner.animations.add('mine');
+        
+        this.miner.animations.play('mine', 15, true);
+        */
+        
+        this.game.physics.arcade.enable(this.miner);
+        
+     
+        
+        this.miner.body.bounce.y = 0.1;
+        this.miner.body.gravity.y = 300;
+        this.miner.body.collideWorldBounds = true;
+
+        
+        
+        
+        
+        
         
     }, 
     
@@ -35,18 +64,23 @@ theGame.prototype = {
         
         // Déplacement au curseur pour le débuggage
         if (cursors.up.isDown) {
-            this.game.camera.y -= 4;
+            this.game.camera.y -= 6;
         }
         else if (cursors.down.isDown) {
-            this.game.camera.y += 4;
+            this.game.camera.y += 6;
         }
         scoreText.y = this.game.camera.y;
+        
+        
+        
+        this.game.physics.arcade.collide(this.miner, this.sprites);
+        
+        
+        
     },
     
     
-    
-    
-    
+
     
     
      /*********************************************************************************************/
@@ -64,12 +98,13 @@ theGame.prototype = {
         // On ajoute le sprite du ciel à partir de la position (0,0)
         this.game.add.sprite(0, 0, 'sky');
         // On ajoute le sprite du sol à partir de la position (0,360)
-        this.game.add.sprite(0, START_Y, 'ground');
+        var ground = this.game.add.sprite(0, START_Y, 'ground');
         // On défini les limites du jeu s'arretant à 1280px de profondeur
         this.game.world.setBounds(0, 0, 0, GAME_HEIGHT);
         //game.time.slowMotion = 60.0;
 
         cursors = this.game.input.keyboard.createCursorKeys();
+        
         
         
 
@@ -203,6 +238,7 @@ theGame.prototype = {
                 sprite.x = element.location.x;
                 sprite.y = element.location.y;
                 sprite.input.useHandCursor = true;
+                sprite.body.immovable = true;
                 
 
                 self.hideBlock(element, graphics, sprite);
