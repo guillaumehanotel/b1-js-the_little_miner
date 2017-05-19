@@ -22,19 +22,19 @@ theGame.prototype = {
         
         
         this.miner = this.game.add.sprite(60,280,'miner');
-        /*
+        
         var mine = this.miner.animations.add('mine');
         
         this.miner.animations.play('mine', 15, true);
-        */
+        
         
         this.game.physics.arcade.enable(this.miner);
         
      
         
         this.miner.body.bounce.y = 0.1;
-        this.miner.body.gravity.y = 300;
-        this.miner.body.collideWorldBounds = true;
+       // this.miner.body.gravity.y = 300;
+       // this.miner.body.collideWorldBounds = true;
 
         
         
