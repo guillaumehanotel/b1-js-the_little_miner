@@ -3,6 +3,10 @@ var preload = function(game){}
 preload.prototype = {
     
     preload: function(){
+        
+        this.game.load.image('gametitle', 'assets/img/accueil.png');
+        this.game.load.spritesheet('torch', 'assets/img/torch.png', 19, 39, 5);
+        
     
         this.game.load.image('sky', 'assets/img/little_sky.png');
         this.game.load.image('ground', 'assets/img/ground.png');
@@ -39,6 +43,7 @@ preload.prototype = {
         this.game.load.spritesheet('destroy_to_6', 'assets/img/destroy_stage_to_6.png', 60, 60, 7);
 
     
+        
     
     },
     create : function(){
