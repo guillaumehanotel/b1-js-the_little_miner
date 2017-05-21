@@ -67,6 +67,10 @@
             return res;
         },
         
+        /**
+         * Méthode getBlocksByProfondeur
+         * Retourne la liste de tous les blocks d'une profondeur donnée
+         */
         getBlocksByProfondeur: function(prof){
             var res_blocks=[];
             
@@ -78,6 +82,12 @@
             
             return res_blocks;
         },
+        
+        destroyTNT: function(){
+               
+            
+        },
+        
         
         destroyDynamite: function(){
             
