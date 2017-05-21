@@ -13,6 +13,8 @@ theGame.prototype = {
         GameModel.createBlocks();
         this.loadGameView();
         
+
+        
     }, 
     
     
@@ -87,7 +89,9 @@ theGame.prototype = {
     },
     
     
-    
+    /**
+     * Retourne le sprite d'une position (x,y)
+     */
     getSprite : function(x,y){
         var res = null;
         
@@ -101,7 +105,26 @@ theGame.prototype = {
     },
     
     
-    /* Méthode pour montrer le block pris en paramètre */
+    /**
+     * Retourne un tableau de sprite correspondant au tableau de blocks en paramètres
+     */
+    getSprites : function(array, self){
+        
+        var array_res = [];
+        
+        array.forEach(function(block){
+            var sprite = self.getSprite(block.getX(), block.getY());
+            array_res.push(sprite);
+        });
+        
+        return array_res;
+    },
+    
+    
+    
+    /** 
+     * Méthode pour enlever le cache noir du block pris en paramètre 
+     */
     showBlock : function(sprite){
         if(typeof sprite.graph !== 'undefined'){
             sprite.graph.destroy();
@@ -111,12 +134,26 @@ theGame.prototype = {
     
     
     
-    
+    /**
+     * Méthode pour enlever tous les caches noirs du sprite en paramètre
+     */
     showBlocks : function(sprite, self){
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
         
-        var aroundBlocks = block.getAroundBlocks(); 
+        if(sprite.name == "Tnt"){
+
+            // prend les blocks de la zone + ceux autour pour les rendre visible
+            var ATNTBlocks = block.getAroundTNTBlocks();
+            var TNTBlocks =  block.getTNTBlocks();
+            var aroundBlocks = ATNTBlocks.concat(TNTBlocks);
+          
+            
+        } else {
+            var aroundBlocks = block.getAroundBlocks(); 
+        }
+        
+   
         
         aroundBlocks.forEach(function(element) {
             var sprite = self.getSprite(element.getX(), element.getY());
@@ -128,7 +165,9 @@ theGame.prototype = {
     
     
         
-    /* Méthode pour cacher le block pris en paramètre */
+    /**
+     * Méthode pour mettre un cache noir devant le block pris en paramètre 
+     */
     hideBlock : function(block, graphics, sprite){
         
         if (block.isBreakable() == false) {
@@ -205,7 +244,9 @@ theGame.prototype = {
                 sprite.input.useHandCursor = true;
                 
 
-                self.hideBlock(element, graphics, sprite);
+                if(HIDEBLOCK){
+                    self.hideBlock(element, graphics, sprite);
+                }
     
                 game.world.bringToTop(graphics);
                 
@@ -236,6 +277,11 @@ theGame.prototype = {
     /* Animation Destruction */
 
 
+    /**
+     * Méthode destroyBlockView
+     * Sert à récupérer le block cliqué pour appeler  
+     * la méthode destroyAnimation, puis détruire le sprite
+     */
     destroyBlockView : function(sprite){
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
@@ -250,16 +296,16 @@ theGame.prototype = {
         },this);
     },
 
-
     
-    
-    
-
+    /**
+     * Méthode destroyAnimation
+     * Prend en paramètre un block et son sprite pour faire jouer l'animation 
+     * de fissurage complète  
+     */
     destroyAnimation : function(block, sprite){
         
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
-        
         
         if(sprite.img){
             sprite.img.destroy();
@@ -272,12 +318,10 @@ theGame.prototype = {
             case 2 :
                 begin_frame = 5;
                 break;
-                
             case 3 : 
             case 4 : 
                 begin_frame = 6;
                 break;
-                
             default :
                 begin_frame = 0;
                 break;
@@ -285,7 +329,7 @@ theGame.prototype = {
         
         
         var destroy = cracks.animations.add('destroy');
-        cracks.animations.play('destroy', 20, false, true);
+        cracks.animations.play('destroy', 15, false, true);
         cracks.animations.currentAnim.setFrame(begin_frame,true);
 
         return destroy;
@@ -294,11 +338,14 @@ theGame.prototype = {
 
 
     
-    
-    
     /*********************************************/
     /* Animation Fissurage */
     
+    /**
+     * Méthode crackBlockView
+     * Sert à récupérer le block cliqué pour appeler successivement 
+     * les méthode crackAnimation, puis crackImage
+     */
     crackBlockView : function(sprite){
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
@@ -316,7 +363,12 @@ theGame.prototype = {
     
     
     
-    // l'image qui restera affiché après la fin de l'animation
+
+    /**
+     * Méthode crackImage
+     * méthode appelé après la fin de l'animation de fissurage, pour afficher la bonne  *image de fissurage
+     *
+     */
     crackImage : function(block, sprite){
         
         var resi_init = block.getInitialResistance();
@@ -353,7 +405,13 @@ theGame.prototype = {
     
     
     
-    // retourne l'animation
+
+    /**
+     * Méthode crackAnimation
+     * Prend en paramètre le bloc et le sprite associé
+     * Va jouer la bonne animation de fissurage en fonction de la résistance de base et  * de la résistance actuelle
+     * Retourne l'animation
+     */
     crackAnimation : function(block, sprite){
         
         var resi_init = block.getInitialResistance();
@@ -397,7 +455,7 @@ theGame.prototype = {
         }
         
         var destroy = cracks.animations.add('destroy');
-        cracks.animations.play('destroy', 20, false, true);
+        cracks.animations.play('destroy', 15, false, true);
         cracks.animations.currentAnim.setFrame(begin_frame,true);
 
         return destroy;
@@ -406,10 +464,89 @@ theGame.prototype = {
     
         
     
+    /**
+     * TNT Animation
+     */
     
-    /************************************************************************************/
-    /***********************************   CONTROLLER  **********************************/
-    /************************************************************************************/
+    TNTAnimation : function(sprite, self) {
+    
+        // on récupère le block de TNt
+        var TNT_Block = GameModel.getBlock(sprite.x, sprite.y);
+    
+        // block pris dans la zone
+        var array_Blocks = TNT_Block.getTNTBlocks();
+    
+
+        array_Blocks.forEach(function(block){
+
+        });
+    
+
+        // ANIMATION 
+        
+        var explosion = this.game.add.sprite(sprite.x-150, sprite.y-150, 'explosion_TNT');
+        var boom = explosion.animations.add('boom');
+        explosion.animations.play('boom', 15, false);
+        
+        
+        //SPRITE
+        
+        // on efface le sprite de la TNT
+        sprite.destroy();
+        
+        // on découvre les sprites alentours
+        this.showBlocks(sprite, self);
+        
+        // sprite des bloks dans la zone
+        var sprite_array_TNT = this.getSprites(array_Blocks, this);
+    
+        
+        // on parcourt tous les sprites des blocks touchés
+        sprite_array_TNT.forEach(function (sprite_touch) {
+            
+            // on récupère leurs block
+            var block = GameModel.getBlock(sprite_touch.x, sprite_touch.y);
+            
+            // si les blocks touchés ne sont pas de la TNt ou dynamite
+            if(block.getType() != TYPEBLOCK.TNT || block.getType() != TYPEBLOCK.DYNAMITE)
+                
+                var destroyed = block.hitBlock(); 
+        
+                // si le block est détruit
+                if (destroyed == true) {
+                    
+                    // on affiche l'animation de destruction
+                    self.destroyBlockView(sprite_touch);
+                    // on enlève de cache noir des blocks alentours
+                    self.showBlocks(sprite_touch, self);
+                    
+                    
+                    // si il n'est pas détruit et que ce n'est pas de la bedrock
+                } else if (destroyed == false && sprite_touch.name != 'Bedrock') {
+                    // on affiche juste l'animaion de fissurage
+                    self.crackBlockView(sprite_touch);
+                }
+            
+            
+            
+            // détruire les images de fissures et effacer les blocks si pas bedrock
+            if (sprite_touch.img && sprite_touch.name != 'Bedrock') 
+                sprite_touch.img.destroy();
+            //sprite_touch.destroy();   
+            
+            
+            
+        });
+
+
+
+        // appeler clickblock pour chaque sprite de la TNT
+    },
+    
+
+    /************************************************/
+    /******************   CONTROLLER  ***************/
+    /************************************************/
     /* Méthode controller -> quand un évenement est joué / un block est cliqué */
 
 
@@ -420,26 +557,47 @@ theGame.prototype = {
         
         block.printLocation();
         
+        
         // si le block est cassable
-        if(block.isBreakable()){
+        if (block.isBreakable()) {
             
+                
             // variable destroyed à vrai ou faux selon si le block est détruit ou non
             var destroyed = block.hitBlock();
-            
-
-            if (destroyed == true) {
-                this.destroyBlockView(sprite);
-                this.showBlocks(sprite, this);
-            } else if (destroyed == false && sprite.name != 'Bedrock') {
-                this.crackBlockView(sprite);
+                
+                
+            if (sprite.name == "Tnt"){
+            // animation TNT 
+                
+                this.TNTAnimation(sprite, this);
+                
+                
+                
+            // animation normal
+            } else {
+                
+                
+                // si le block est détruit
+                if (destroyed == true) {
+                    
+                    // on affiche l'animation de destruction
+                    this.destroyBlockView(sprite);
+                    // on enlève de cache noir des blocks alentours
+                    this.showBlocks(sprite, this);
+                    
+                    
+                    // si il n'est pas détruit et que ce n'est pas de la bedrock
+                } else if (destroyed == false && sprite.name != 'Bedrock') {
+                    // on affiche juste l'animaion de fissurage
+                    this.crackBlockView(sprite);
+                }
             }
-                this.updateText();
+            
+  
+            this.updateText();
         }
-        
     }
-    
 }
-
    
 
 
