@@ -133,10 +133,9 @@
         this.resistance--;
         
         
-        // si c'est de la TNT
-        if(this.type == TYPEBLOCK.TNT){
+        // si c'est de la TNT ou de la dynamite
+        if(this.type == TYPEBLOCK.TNT || this.type == TYPEBLOCK.DYNAMITE){
 
-            //this.hitTNTBlock();
             this.destroyed = true;
             this.propagateBreakable();
             
@@ -147,39 +146,13 @@
                 this.destroyed = true;
                 // met breakable à true à toutes les cases autour du/des block(s) détruit(s)
                 this.propagateBreakable();
-            }
-
-            
-              
+            }     
         }
-        
-
-        
-        
+            
         return this.destroyed;
 
     }
     
-    // this est le block de TNT
-    /**
-     * 
-     *
-     */
-    /*
-    Block.prototype.hitTNTBlock = function(){
-        
-        
-        var arrayBlocks = this.getTNTBlocks();
-        
-        arrayBlocks.forEach(function(element){
-            
-                
-                //element.hitBlock(); 
-            
-        });
-        
-    }
-    */
 
     
     /**
@@ -191,6 +164,8 @@
         
         if(this.type == TYPEBLOCK.TNT){
             var array = this.getAroundTNTBlocks();
+        } else if(this.type == TYPEBLOCK.DYNAMITE){
+            var array = this.getAroundDynamiteBlocks();
         } else {
             var array = this.getAroundBlocks();
         }
@@ -230,9 +205,31 @@
     }
 
     
+    Block.prototype.getAroundDynamiteBlocks = function(){
+        
+        var Blocks = this.getDynamiteBlocks();
+        
+        var aroundBlocks = [];
+        
+        Blocks.forEach(function(block){
+           
+            if(typeof block.getTopBlock() !== 'undefined'){
+                aroundBlocks.push(block.getTopBlock());
+            }
+            
+            if(typeof block.getBottomBlock() !== 'undefined'){
+                aroundBlocks.push(block.getBottomBlock());
+            }         
+  
+        });
+        
+        return aroundBlocks;
+        
+    }
+    
     /**
      * Méthode getAroundBlocks
-     * Retourne un tableau de tous les blocks autour de la déflagration de TNT
+     * Retourne un tableau de tous les blocks autour des blocks touchés par la TNT
      */
     Block.prototype.getAroundTNTBlocks = function(){
         
@@ -349,6 +346,9 @@
         return this.type;
     }
 
+    Block.prototype.getProfondeur = function(){
+        return this.profondeur;
+    }
     Block.prototype.getInitialResistance = function(){
         return this.type.resistance;
     }
@@ -373,6 +373,18 @@
         return this.location.y;
     }
     
+    /**
+     * Retourne la liste des blocks touchés par la dynamite
+     */
+    Block.prototype.getDynamiteBlocks = function(){
+     
+        return GameModel.getBlocksByProfondeur(this.getProfondeur());
+
+    }
+    
+    /**
+     * Retourne la liste des blocks touchés par la TNT
+     */
     Block.prototype.getTNTBlocks =  function(){
         
         

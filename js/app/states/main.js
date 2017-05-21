@@ -13,7 +13,9 @@ theGame.prototype = {
         GameModel.createBlocks();
         this.loadGameView();
         
+        
 
+        
         
     }, 
     
@@ -148,6 +150,12 @@ theGame.prototype = {
             var TNTBlocks =  block.getTNTBlocks();
             var aroundBlocks = ATNTBlocks.concat(TNTBlocks);
           
+        } else if(sprite.name == "Dynamite"){
+            
+            var DynamiteBlocks = block.getDynamiteBlocks();
+            var ADynamiteBlocks = block.getAroundDynamiteBlocks();
+            var aroundBlocks = ADynamiteBlocks.concat(DynamiteBlocks);
+            
             
         } else {
             var aroundBlocks = block.getAroundBlocks(); 
@@ -472,15 +480,6 @@ theGame.prototype = {
     
         // on récupère le block de TNt
         var TNT_Block = GameModel.getBlock(sprite.x, sprite.y);
-    
-        // block pris dans la zone
-        var array_Blocks = TNT_Block.getTNTBlocks();
-    
-
-        array_Blocks.forEach(function(block){
-
-        });
-    
 
         // ANIMATION 
         
@@ -488,6 +487,7 @@ theGame.prototype = {
         var boom = explosion.animations.add('boom');
         explosion.animations.play('boom', 15, false);
         
+        var array_Blocks = TNT_Block.getTNTBlocks();
         
         //SPRITE
         
@@ -534,13 +534,76 @@ theGame.prototype = {
                 sprite_touch.img.destroy();
             //sprite_touch.destroy();   
             
-            
-            
         });
 
-
-
         // appeler clickblock pour chaque sprite de la TNT
+    },
+    
+    
+
+    DynamiteAnimation : function(sprite, self){
+        
+        // le block de dynamite
+        var Dynamite_Block = GameModel.getBlock(sprite.x, sprite.y);
+        
+        // on détruit son sprite
+        sprite.destroy();
+        
+        // on récupère les blocks touchés
+        var array_Blocks = Dynamite_Block.getDynamiteBlocks();
+        
+        // on montre les blocks adjacents
+        this.showBlocks(sprite, self);
+        
+        var mygame = this.game;
+        
+        // on récupère les sprites des blocks touchés
+        var sprite_array_Dynamite = this.getSprites(array_Blocks, this);
+        
+        sprite_array_Dynamite.forEach(function(sprite_touch){
+            
+
+            var explosion = mygame.add.sprite(sprite_touch.x-30, sprite_touch.y-30, 'explosion_Dynamite');
+            var boom = explosion.animations.add('boom');
+            explosion.animations.play('boom', 50, false);
+        
+            
+            
+            // on récupère leurs block
+            var block = GameModel.getBlock(sprite_touch.x, sprite_touch.y);
+            
+            // si les blocks touchés ne sont pas de la TNt ou dynamite
+            if(block.getType() != TYPEBLOCK.TNT || block.getType() != TYPEBLOCK.DYNAMITE)
+                var destroyed = block.hitBlock();
+            
+                // si le block est détruit
+                if (destroyed == true) {
+                    
+                    // on affiche l'animation de destruction
+                    self.destroyBlockView(sprite_touch);
+                    // on enlève de cache noir des blocks alentours
+                    self.showBlocks(sprite_touch, self);
+                    
+                    
+                    // si il n'est pas détruit et que ce n'est pas de la bedrock
+                } else if (destroyed == false && sprite_touch.name != 'Bedrock') {
+                    // on affiche juste l'animaion de fissurage
+                    self.crackBlockView(sprite_touch);
+                }
+            
+            
+            
+            // détruire les images de fissures et effacer les blocks si pas bedrock
+            if (sprite_touch.img && sprite_touch.name != 'Bedrock') 
+                sprite_touch.img.destroy();
+            
+                
+            
+        });
+        
+        
+        
+        
     },
     
 
@@ -566,11 +629,17 @@ theGame.prototype = {
             var destroyed = block.hitBlock();
                 
                 
-            if (sprite.name == "Tnt"){
             // animation TNT 
+            if (sprite.name == "Tnt"){
                 
                 this.TNTAnimation(sprite, this);
                 
+                
+            // animation Dynamite    
+            } else if(sprite.name == "Dynamite"){
+                
+                
+                this.DynamiteAnimation(sprite, this);
                 
                 
             // animation normal

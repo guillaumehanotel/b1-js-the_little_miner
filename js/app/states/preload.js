@@ -45,6 +45,8 @@ preload.prototype = {
 
         this.game.load.spritesheet('explosion_TNT', 'assets/img/explosion.png', 384, 384, 16);
         
+        this.game.load.spritesheet('explosion_Dynamite', 'assets/img/dynamite_explosion.png', 100, 100, 40);
+        
     
     },
     create : function(){
