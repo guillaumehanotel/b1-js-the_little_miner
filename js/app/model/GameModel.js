@@ -15,6 +15,7 @@
     var GameModel = {
         blocks: null,
         pioche: PICKER_NB_HIT,
+        profondeur : 0,
 
 
 
