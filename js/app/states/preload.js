@@ -3,6 +3,21 @@ var preload = function(game){}
 preload.prototype = {
     
     preload: function(){
+        
+        this.game.load.audio('fairytail','assets/music/FairyTail.mp3');
+        
+
+        this.game.load.audio('BigExplosion','assets/music/BigExplosion.mp3');
+        this.game.load.audio('BreakStone','assets/music/BreakStone.mp3');
+        this.game.load.audio('HitStone','assets/music/HitStone.mp3');
+        
+
+
+        this.game.load.image('gametitle', 'assets/img/accueil.png');
+        this.game.load.image('play', 'assets/img/start2.png');
+        this.game.load.image('gameover', 'assets/img/gameover.png');
+        this.game.load.spritesheet('torch', 'assets/img/torch.png', 19, 39, 5);
+        
     
         this.game.load.image('sky', 'assets/img/little_sky.png');
         this.game.load.image('ground', 'assets/img/ground.png');
@@ -38,7 +53,10 @@ preload.prototype = {
         this.game.load.spritesheet('destroy_to_4', 'assets/img/destroy_stage_to_4.png', 60, 60, 5);
         this.game.load.spritesheet('destroy_to_6', 'assets/img/destroy_stage_to_6.png', 60, 60, 7);
 
-    
+        this.game.load.spritesheet('explosion_TNT', 'assets/img/explosion.png', 384, 384, 16);
+        
+        this.game.load.spritesheet('explosion_Dynamite', 'assets/img/dynamite_explosion.png', 100, 100, 40);
+        
     
     },
     create : function(){

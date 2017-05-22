@@ -15,7 +15,16 @@
     var GameModel = {
         blocks: null,
         pioche: PICKER_NB_HIT,
-
+        profondeur : 0,
+        ore_score : {
+            coal : 0,
+            iron : 0,
+            gold : 0,
+            diamond : 0
+        },
+        score : 0,
+        
+        
 
 
         /**
@@ -41,7 +50,46 @@
             }
             this.blocks = array_blocks;
         },
+        
+        /**
+         * Incrémente le score des minerais en fonction du block tapé
+         */
+        incrementOreScore : function(block){
+            
+            switch(block.getType()){
+                    
+                case TYPEBLOCK.COAL : 
+                    this.ore_score.coal++;
+                    break;
+                    
+                case TYPEBLOCK.IRON : 
+                    this.ore_score.iron++;
+                    break;
+                    
+                case TYPEBLOCK.GOLD : 
+                    this.ore_score.gold++;
+                    break;
+                    
+                case TYPEBLOCK.DIAMOND : 
+                    this.ore_score.diamond++;
+                    break;
+                default : break;
+            }
+            
+        },
 
+            
+        getScore : function(){
+            
+            var coal = this.ore_score.coal*2;
+            var iron = this.ore_score.iron*3;
+            var gold = this.ore_score.gold*4;
+            var diamond = this.ore_score.diamond*5;
+            
+            this.score = this.profondeur + coal + iron + gold + diamond;
+            
+            
+        }, 
 
         /**
          * Méthode printBlocks de GameModel
@@ -67,6 +115,10 @@
             return res;
         },
         
+        /**
+         * Méthode getBlocksByProfondeur
+         * Retourne la liste de tous les blocks d'une profondeur donnée
+         */
         getBlocksByProfondeur: function(prof){
             var res_blocks=[];
             
@@ -79,9 +131,27 @@
             return res_blocks;
         },
         
-        destroyDynamite: function(){
+        /**
+         * Retourne la profondeur la plus basse atteinte
+         */
+        getProfondeur : function(){
+          
+            var prof = 0;
+            
+            this.blocks.forEach(function(block){
+               
+                if(block.destroyed == true && block.getProfondeur() > prof){
+                    prof = block.getProfondeur();
+                }
+                
+            });
+            
+            this.profondeur = prof;
+            
+            return prof;
             
         },
+            
         
         reset : function(){
             this.blocks = null;

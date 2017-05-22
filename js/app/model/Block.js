@@ -119,74 +119,62 @@
      * Si la résistance tombe à 0, le block est considéré comme détruit et renvoie true, sinon false
      *
      */
-    Block.prototype.hitBlock = function(){
+    Block.prototype.hitBlock = function(isCollateral){
 
+        
         if(this.type == TYPEBLOCK.BONUS){
             GameModel.pioche+= 5;
-        }
-        else if(this.type != TYPEBLOCK.BEDROCK){
-            GameModel.pioche--;
+        } else if(this.type != TYPEBLOCK.BEDROCK){
+            if(!isCollateral)
+                GameModel.pioche--;
         }
 
+
+        // on décrémente la résistance du block
         this.resistance--;
-        if(this.resistance == 0){
-            this.propagateBreakable();
-            this.destroyed = true;
-        }
+        
+        
+        
+        // si c'est de la TNT ou de la dynamite
+        if(this.type == TYPEBLOCK.TNT || this.type == TYPEBLOCK.DYNAMITE){
 
+            this.destroyed = true;
+            this.propagateBreakable();
+            
+        // si c'est un block normal    
+        } else {
+            
+            
+
+            if(this.resistance == 0){
+                
+                GameModel.incrementOreScore(this);
+                this.destroyed = true;
+                // met breakable à true à toutes les cases autour du/des block(s) détruit(s)
+                this.propagateBreakable();
+            }     
+        }
+            
         return this.destroyed;
 
     }
     
-    Block.prototype.getLeftBlock = function(){
-        var x = this.getX();
-        var y = this.getY();
-        // si la borne inférieur de x n'est pas à 0 (au minimum)
-        if(x != 0){
-            return GameModel.getBlock(x-60,y);
-        }
-    }
+
     
-    Block.prototype.getRightBlock = function(){
-        
-        var x = this.getX();
-        var y = this.getY();
-        
-        // si la borne supérieur de x n'est pas à 360 (au max) (420)
-        if(x != 360){
-            return GameModel.getBlock(x+60,y);
-        }
-        
-    }
-    
-    Block.prototype.getTopBlock = function(){
-        
-        var x = this.getX();
-        var y = this.getY();
-        
-        // si la borne inférieur de y n'est pas au minimum de Y (360)
-        if(y != START_Y){
-            return GameModel.getBlock(x,y-60);
-        }
-        
-    }
-        
-        
-    Block.prototype.getBottomBlock = function(){
-        
-        var x = this.getX();
-        var y = this.getY();
-        
-        // si la borne supérieur de y n'est pas au max du jeu
-        if(y != GAME_HEIGHT-60){
-            return GameModel.getBlock(x,y+60);
-        }
-    }
-    
-    
+    /**
+     * Méthode propagateBreakable
+     * Récupère tous les blocks autour du block this, et leurs met l'état
+     * breakable(visible)
+     */
     Block.prototype.propagateBreakable = function(){
         
-        var array = this.getAroundBlocks();
+        if(this.type == TYPEBLOCK.TNT){
+            var array = this.getAroundTNTBlocks();
+        } else if(this.type == TYPEBLOCK.DYNAMITE){
+            var array = this.getAroundDynamiteBlocks();
+        } else {
+            var array = this.getAroundBlocks();
+        }
         
         array.forEach(function (element) {
             element.setBreakable(true);
@@ -194,6 +182,10 @@
         
     }
 
+    /**
+     * Méthode getAroundBlocks
+     * Retourne un tableau de tous les blocks autour du block this
+     */
     Block.prototype.getAroundBlocks = function(){
         
         var arrayBlocks = [];
@@ -218,7 +210,131 @@
         
     }
 
+    
+    Block.prototype.getAroundDynamiteBlocks = function(){
+        
+        var Blocks = this.getDynamiteBlocks();
+        
+        var aroundBlocks = [];
+        
+        Blocks.forEach(function(block){
+           
+            if(typeof block.getTopBlock() !== 'undefined'){
+                aroundBlocks.push(block.getTopBlock());
+            }
+            
+            if(typeof block.getBottomBlock() !== 'undefined'){
+                aroundBlocks.push(block.getBottomBlock());
+            }         
+  
+        });
+        
+        return aroundBlocks;
+        
+    }
+    
+    /**
+     * Méthode getAroundBlocks
+     * Retourne un tableau de tous les blocks autour des blocks touchés par la TNT
+     */
+    Block.prototype.getAroundTNTBlocks = function(){
+        
+        var Blocks = [];
+        
+        // block du haut y-3
+        var block_1 = this.getTopBlock(3);
+        if(typeof block_1 !== 'undefined')
+            Blocks.push(block_1);
+        
+        // block y-2 x+1
+        var block_2 = this.getTopRightBlock();
+        if(typeof block_2 !== 'undefined'){
+            var block_2a = block_2.getTopBlock();
+            if(typeof block_2a !== 'undefined')
+                Blocks.push(block_2a);
+        }
+        
+        // block y-1 x+2
+        var block_3 = this.getTopRightBlock();
+        if(typeof block_3 !== 'undefined'){
+            var block_3a = block_3.getRightBlock();
+            if(typeof block_3a !== 'undefined')
+                Blocks.push(block_3a);
+        }
+        
+        
+        // block x+3
+        var block_4 = this.getRightBlock(3);
+        if(typeof block_4 !== 'undefined')
+            Blocks.push(block_4);       
+        
+        
+        // block y+1 x+2
+        var block_5 = this.getBottomRightBlock();
+        if(typeof block_5 !== 'undefined'){
+            var block_5a = block_5.getRightBlock();
+            if(typeof block_5a !== 'undefined')
+                Blocks.push(block_5a); 
+        }
+        
+        // block y+2 x+1
+        var block_6 = this.getBottomRightBlock();
+        if(typeof block_6 !== 'undefined'){
+            var block_6a = block_6.getBottomBlock();
+            if(typeof block_6a !== 'undefined')
+                Blocks.push(block_6a);     
+        }
+         
+        // block y+3
+        var block_7 = this.getBottomBlock(3);
+        if(typeof block_7 !== 'undefined')
+            Blocks.push(block_7);  
+        
+        // block y+2 x-1
+        var block_8 = this.getBottomLeftBlock();
+        if(typeof block_8 !== 'undefined'){
+            var block_8a = block_8.getBottomBlock();
+            if(typeof block_8a !== 'undefined')
+                Blocks.push(block_8a);     
+        }
+        
+        // block y+1 x-2
+        var block_9 = this.getBottomLeftBlock();
+        if(typeof block_9 !== 'undefined'){
+            var block_9a = block_9.getLeftBlock();
+            if(typeof block_9a !== 'undefined')
+                Blocks.push(block_9a);   
+        }
+        
+        // block  x-3
+        var block_10 = this.getLeftBlock(3);
+        if(typeof block_10 !== 'undefined')
+            Blocks.push(block_10);   
+          
+        // block  x-2 y-1
+        var block_11 = this.getTopLeftBlock();
+        if(typeof block_11 !== 'undefined'){
+            var block_11a = block_11.getLeftBlock();
+            if(typeof block_11a !== 'undefined')
+                Blocks.push(block_11a); 
+        }
+        
+        // block  x-1 y-2
+        var block_12 = this.getTopLeftBlock();
+        if(typeof block_12 !== 'undefined'){
+            var block_12a = block_12.getTopBlock();
+            if(typeof block_12a !== 'undefined')
+                Blocks.push(block_12a);  
+        }
+        
+        return Blocks;
+        
+    }
+    
 
+    
+    
+    
     /**
      * Méthode de Block : printLocation
      * affiche la position x,y d'un block
@@ -236,21 +352,12 @@
         return this.type;
     }
 
+    Block.prototype.getProfondeur = function(){
+        return this.profondeur;
+    }
     Block.prototype.getInitialResistance = function(){
         return this.type.resistance;
     }
-    
-    //Méthode de Block : TNT
-    
-    /*Block.prototype.destructionTNTBlock = function(x,y){
-        var block = GameModel.getBlock(x,y);
-        var destroyBlock = [];
-        destroyBlock.push(block);
-        destroyBlock.push()
-    }*/
-    
-    
-    
 
     Block.prototype.getResistance = function(){
         return this.resistance;
@@ -271,3 +378,166 @@
     Block.prototype.getY = function(){
         return this.location.y;
     }
+    
+    /**
+     * Retourne la liste des blocks touchés par la dynamite
+     */
+    Block.prototype.getDynamiteBlocks = function(){
+     
+        return GameModel.getBlocksByProfondeur(this.getProfondeur());
+
+    }
+    
+    /**
+     * Retourne la liste des blocks touchés par la TNT
+     */
+    Block.prototype.getTNTBlocks =  function(){
+        
+        
+        var Blocks = [];
+
+        // block du haut y-1
+        var block_top_1 = this.getTopBlock();
+        if(typeof block_top_1 !== 'undefined'){
+            Blocks.push(block_top_1);
+            // block du haut y-2
+            var block_top_2 = block_top_1.getTopBlock();
+            if(typeof block_top_2 !== 'undefined')
+                Blocks.push(block_top_2);
+        }
+        
+        // block de droite x+1
+        var block_right_1 = this.getRightBlock();
+        if(typeof block_right_1 !== 'undefined'){
+            Blocks.push(block_right_1);
+            // block de droite x+2
+            var block_right_2 = block_right_1.getRightBlock();
+            if(typeof block_right_2 !== 'undefined')
+                Blocks.push(block_right_2);
+        }
+        
+        // block de gauche x-1
+        var block_left_1 = this.getLeftBlock();
+        if(typeof block_left_1 !== 'undefined'){
+            Blocks.push(block_left_1);
+            // block de gauche x-2
+            var block_left_2 = block_left_1.getLeftBlock();
+            if(typeof block_left_2 !== 'undefined')
+                Blocks.push(block_left_2);  
+        }
+        
+        // block du bas y+1
+        var block_bottom_1 = this.getBottomBlock();
+        if(typeof block_bottom_1 !== 'undefined'){
+            Blocks.push(block_bottom_1);
+            // block du bas y+2
+            var block_bottom_2 = block_bottom_1.getBottomBlock();
+            if(typeof block_bottom_2 !== 'undefined')
+                Blocks.push(block_bottom_2);    
+        }
+        
+        // block haut gauche x-1 y-1
+        var block_top_left = this.getTopLeftBlock();
+        if(typeof block_top_left !== 'undefined')
+            Blocks.push(block_top_left);
+        
+        // block haut droite x+1 y-1
+        var block_top_right = this.getTopRightBlock();
+        if(typeof block_top_right !== 'undefined')
+            Blocks.push(block_top_right);
+        
+        // block bas droite x+1 y+1
+        var block_bottom_right = this.getBottomRightBlock();
+        if(typeof block_bottom_right !== 'undefined')
+            Blocks.push(block_bottom_right);
+        
+        // block bas gauche x-1 y+1
+        var block_bottom_left = this.getBottomLeftBlock();
+        if(typeof block_bottom_left !== 'undefined')
+            Blocks.push(block_bottom_left);
+        
+        
+        
+        return Blocks;
+        
+    }
+    
+    
+    Block.prototype.getLeftBlock = function(nb){
+        var x = this.getX();
+        var y = this.getY();
+        if(nb !== 'undefined')
+            nb = 1;
+        // si la borne inférieur de x n'est pas à 0 (au minimum)
+        if(x != 0)
+            return GameModel.getBlock(x-(60*nb),y);
+    }
+    Block.prototype.getRightBlock = function(nb){
+        var x = this.getX();
+        var y = this.getY();
+        if(nb !== 'undefined')
+            nb = 1;
+        // si la borne supérieur de x n'est pas à 360 (au max) (420)
+        if(x != 360)
+            return GameModel.getBlock(x+(60*nb),y);
+    }
+    Block.prototype.getTopBlock = function(nb){
+        var x = this.getX();
+        var y = this.getY();
+        if(nb !== 'undefined')
+            nb = 1;
+        // si la borne inférieur de y n'est pas au minimum de Y (360)
+        if(y != START_Y)
+            return GameModel.getBlock(x,y-(60*nb));
+    }
+    
+    Block.prototype.getBottomBlock = function(nb){
+        var x = this.getX();
+        var y = this.getY();
+        if(nb !== 'undefined')
+            nb = 1;
+        // si la borne supérieur de y n'est pas au max du jeu
+        if(y != GAME_HEIGHT-60)
+            return GameModel.getBlock(x,y+(60*nb));
+    }
+    
+    
+    Block.prototype.getTopLeftBlock = function(){
+        var x = this.getX();
+        var y = this.getY();
+        if(y != START_Y && x != 0){
+            return GameModel.getBlock(x-60,y-60);
+        }
+    }
+    Block.prototype.getTopRightBlock = function(){
+        var x = this.getX();
+        var y = this.getY();
+        
+        if(y != START_Y && x != 360){
+            return GameModel.getBlock(x+60,y-60);
+        }
+    }
+    Block.prototype.getBottomRightBlock = function(){
+        var x = this.getX();
+        var y = this.getY();
+        
+        if(y != GAME_HEIGHT-60 && x != 360){
+            return GameModel.getBlock(x+60,y+60);
+        }
+    }
+    Block.prototype.getBottomLeftBlock = function(){
+        var x = this.getX();
+        var y = this.getY();
+        
+        if(y != GAME_HEIGHT-60 && x != 0){
+            return GameModel.getBlock(x-60,y+60);
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
