@@ -23,7 +23,6 @@ theGame.prototype = {
         
         // Au premier block cliqué, la fenetre descend
         
-
         
         if(MODE_LIBRE){
             // Déplacement au curseur pour le débuggage
@@ -96,7 +95,7 @@ theGame.prototype = {
         });
         
         
-        profText = this.game.add.text(250, 250, 'Profondeur: ' + GameModel.getProfondeur(), {
+        profText = this.game.add.text(350, 450,GameModel.getProfondeur()+" m", {
             fontSize: '23px',
             fill: '#fff'
         });
@@ -289,7 +288,7 @@ theGame.prototype = {
      */
     updateText : function(){
         scoreText.setText("Pioche: "+GameModel.pioche);
-        profText.setText("Profondeur: "+GameModel.getProfondeur());
+        profText.setText(GameModel.getProfondeur()+" m");
     },
 
 
@@ -515,15 +514,16 @@ theGame.prototype = {
         // sprite des bloks dans la zone
         var sprite_array_TNT = this.getSprites(array_Blocks, this);
     
+        GameModel.pioche--;
         
         // on parcourt tous les sprites des blocks touchés
         sprite_array_TNT.forEach(function (sprite_touch) {
             
             // on récupère leurs block
             var block = GameModel.getBlock(sprite_touch.x, sprite_touch.y);
-            
+              
             if(!block.destroyed)
-                self.BlockAnimation(sprite_touch, block, self);
+                self.BlockAnimation(sprite_touch, block, self, true);
             
             // détruire les images de fissures et effacer les blocks si pas bedrock
             if (sprite_touch.img && sprite_touch.name != 'Bedrock') 
@@ -553,6 +553,8 @@ theGame.prototype = {
         
         var mygame = this.game;
         
+        GameModel.pioche--;
+        
         // on récupère les sprites des blocks touchés
         var sprite_array_Dynamite = this.getSprites(array_Blocks, this);
         
@@ -566,9 +568,9 @@ theGame.prototype = {
             
             // on récupère leurs block
             var block = GameModel.getBlock(sprite_touch.x, sprite_touch.y);
-               
+            
             if(!block.destroyed)
-                self.BlockAnimation(sprite_touch, block, self);
+                self.BlockAnimation(sprite_touch, block, self, true);
         
             // détruire les images de fissures et effacer les blocks si pas bedrock
             if (sprite_touch.img && sprite_touch.name != 'Bedrock') 
@@ -579,12 +581,12 @@ theGame.prototype = {
 
     },
     
-    BlockAnimation : function(sprite, block, self){
+    BlockAnimation : function(sprite, block, self, isCollateral){
         
-        // si les blocks touchés ne sont pas de la TNt ou dynamite
+        // si les blocks touchés ne sont pas de la TNT ou dynamite
         if(block.getType() != TYPEBLOCK.TNT || block.getType() != TYPEBLOCK.DYNAMITE)
             // variable destroyed à vrai ou faux selon si le block est détruit ou non
-            var destroyed = block.hitBlock();
+            var destroyed = block.hitBlock(isCollateral);
                      
         // si le block est détruit
         if (destroyed == true) {
@@ -635,7 +637,7 @@ theGame.prototype = {
             // animation normal
             } else {
                 
-                this.BlockAnimation(sprite, block, this);
+                this.BlockAnimation(sprite, block, this, false);
 
             }
             

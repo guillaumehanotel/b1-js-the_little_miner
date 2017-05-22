@@ -119,16 +119,17 @@
      * Si la résistance tombe à 0, le block est considéré comme détruit et renvoie true, sinon false
      *
      */
-    Block.prototype.hitBlock = function(){
+    Block.prototype.hitBlock = function(isCollateral){
 
         
         if(this.type == TYPEBLOCK.BONUS){
             GameModel.pioche+= 5;
         } else if(this.type != TYPEBLOCK.BEDROCK){
-            GameModel.pioche--;
+            if(!isCollateral)
+                GameModel.pioche--;
         }
 
-        
+
         // on décrémente la résistance du block
         this.resistance--;
         
@@ -142,6 +143,8 @@
             
         // si c'est un block normal    
         } else {
+            
+            
 
             if(this.resistance == 0){
                 

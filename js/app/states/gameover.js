@@ -13,25 +13,26 @@ gameOver.prototype = {
   		var gameOverTitle = this.game.add.sprite(210,130,"gameover");
 		gameOverTitle.anchor.setTo(0.5,0.5);
         
-        /*
-        coal = this.game.add.text(150, 100, 'Charbon : ' + GameModel.ore_score.coal, {
-            fontSize: '23px',
-            fill: '#fff'
-        });
+        if(DETAIL_SCORE){
+            coal = this.game.add.text(150, 310, 'Charbon : ' + GameModel.ore_score.coal, {
+                fontSize: '23px',
+                fill: '#fff'
+            });
+
+            iron = this.game.add.text(150, 330, 'Fer : ' + GameModel.ore_score.iron, {
+                fontSize: '23px',
+                fill: '#fff'
+            });
+            gold = this.game.add.text(150, 350, 'Or : ' + GameModel.ore_score.gold, {
+                fontSize: '23px',
+                fill: '#fff'
+            });
+            diamond = this.game.add.text(150, 370, 'Diamant : ' + GameModel.ore_score.diamond, {
+                fontSize: '23px',
+                fill: '#fff'
+            });
+        }
         
-        iron = this.game.add.text(150, 120, 'Fer : ' + GameModel.ore_score.iron, {
-            fontSize: '23px',
-            fill: '#fff'
-        });
-        gold = this.game.add.text(150, 140, 'Or : ' + GameModel.ore_score.gold, {
-            fontSize: '23px',
-            fill: '#fff'
-        });
-        diamond = this.game.add.text(150, 160, 'Diamant : ' + GameModel.ore_score.diamond, {
-            fontSize: '23px',
-            fill: '#fff'
-        });
-        */
            
         score = this.game.add.text(90, 240, 'Score : ' + GameModel.score, {
             fontSize: '55px',

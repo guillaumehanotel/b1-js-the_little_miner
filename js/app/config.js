@@ -27,5 +27,5 @@
     // déplacement automatique ou aux flèches directionelles
     const MODE_LIBRE = true;
     
-    
+    const DETAIL_SCORE = false;
     
