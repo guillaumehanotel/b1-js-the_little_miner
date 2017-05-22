@@ -43,6 +43,14 @@ gameOver.prototype = {
         
 		var playButton = this.game.add.button(220,450,"play",this.playTheGame,this);
 		playButton.anchor.setTo(0.5,0.5);
+        
+        
+            credit = this.game.add.text(80, 530, '       Credits Music: \nFairy Tail Version 8 bit', {
+                fontSize: '23px',
+                fill: '#fff'
+            });
+        
+        
 	},
     
 	playTheGame: function(){
