@@ -1,6 +1,7 @@
 
 var theGame = function(game){
     sprites = [];
+    miner = 0;
 }
 
 
@@ -9,9 +10,31 @@ theGame.prototype = {
     
     create: function(){
         
+        //this.game.physics.startSystem(Phaser.Physics.ARCADE);
+        
+        
         GameModel.reset();
         GameModel.createBlocks();
         this.loadGameView();
+       
+        
+        this.miner = this.game.add.sprite(60,280,'miner');
+        
+        var mine = this.miner.animations.add('mine');
+        
+        this.miner.animations.play('mine', 15, true);
+        
+        
+        this.game.physics.arcade.enable(this.miner);
+        
+     
+        
+        this.miner.body.bounce.y = 0.1;
+       // this.miner.body.gravity.y = 300;
+       // this.miner.body.collideWorldBounds = true;
+
+        
+        
         
         
 
@@ -63,11 +86,18 @@ theGame.prototype = {
         }
         
 
+
         scoreText.y = this.game.camera.y;
         profText.y = this.game.camera.y;
+
+        
+        this.game.physics.arcade.collide(this.miner, this.sprites);
+        
+
     },
     
     
+<<<<<<< HEAD
     
     movePickaxe : function(){
         
@@ -84,6 +114,9 @@ theGame.prototype = {
 
     },
     
+=======
+
+>>>>>>> 1bb2f3a17eabc2f248352236c5ff325d33d4e88f
     
     
      /*********************************************************************************************/
@@ -102,15 +135,23 @@ theGame.prototype = {
         this.game.add.sprite(0, 0, 'sky');
         // On ajoute le sprite du sol à partir de la position (0,360)
         var ground = this.game.add.sprite(0, START_Y, 'ground');
+<<<<<<< HEAD
         this.game.world.sendToBack(ground);
+=======
+>>>>>>> 1bb2f3a17eabc2f248352236c5ff325d33d4e88f
         // On défini les limites du jeu s'arretant à 1280px de profondeur
         this.game.world.setBounds(0, 0, 0, GAME_HEIGHT);
         //game.time.slowMotion = 60.0;
 
         cursors = this.game.input.keyboard.createCursorKeys();
         
+<<<<<<< HEAD
         pioche = this.game.add.sprite(this.game.input.mousePointer.worldX, this.game.input.mousePointer.worldY, 'pioche');
         this.game.world.bringToTop(pioche);
+=======
+        
+        
+>>>>>>> 1bb2f3a17eabc2f248352236c5ff325d33d4e88f
 
         var go = false;
         
@@ -291,7 +332,12 @@ theGame.prototype = {
                 sprite.name = element.type.name;
                 sprite.x = element.location.x;
                 sprite.y = element.location.y;
+<<<<<<< HEAD
                 sprite.input.useHandCursor = false;
+=======
+                sprite.input.useHandCursor = true;
+                sprite.body.immovable = true;
+>>>>>>> 1bb2f3a17eabc2f248352236c5ff325d33d4e88f
                 
 
                 if(HIDEBLOCK){

@@ -62,9 +62,14 @@ preload.prototype = {
         this.game.load.spritesheet('destroy_to_4', 'assets/img/destroy_stage_to_4.png', 60, 60, 5);
         this.game.load.spritesheet('destroy_to_6', 'assets/img/destroy_stage_to_6.png', 60, 60, 7);
 
+
         this.game.load.spritesheet('explosion_TNT', 'assets/img/explosion.png', 384, 384, 16);
         
         this.game.load.spritesheet('explosion_Dynamite', 'assets/img/dynamite_explosion.png', 100, 100, 40);
+
+        this.game.load.spritesheet('miner', 'assets/img/anim_miner_test2_right.gif', 60, 80, 10);
+        
+
         
         this.game.load.spritesheet('pioche_animation', 'assets/img/pioche_animation.png', 65, 65, 3);
         
