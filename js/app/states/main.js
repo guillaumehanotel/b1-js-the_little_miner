@@ -27,8 +27,6 @@ theGame.prototype = {
         // Au premier block cliqué, la fenetre descend
         
         
-        
-        
         pioche.position.set(this.game.input.mousePointer.worldX-20, this.game.input.mousePointer.worldY-20);
 
         this.game.world.bringToTop(pioche);
@@ -44,18 +42,22 @@ theGame.prototype = {
             }
             
         } else {
-                    
-            this.game.camera.y += 1;
-            scoreText.y = this.game.camera.y;
-            profText.y = this.game.camera.y;
-        
+            
+                  
+            if(GameModel.pioche != PICKER_NB_HIT){
+                this.game.camera.y += 1;
+                scoreText.y = this.game.camera.y;
+                profText.y = this.game.camera.y; 
+            }
+              
+            
         }
         
         
         
         
         // Condition de fin d'arret du jeu
-        if (GameModel.pioche <= 0) {
+        if (GameModel.pioche <= 0 /*|| on a dépassé le cadre */) {
             //scoreText.setText("Game Over");
             this.game.state.start("GameOver");
         }
@@ -110,7 +112,7 @@ theGame.prototype = {
         pioche = this.game.add.sprite(this.game.input.mousePointer.worldX, this.game.input.mousePointer.worldY, 'pioche');
         this.game.world.bringToTop(pioche);
 
-        
+        var go = false;
         
         // Création graphique des blocks
         // retourne tableau de sprites
@@ -663,6 +665,8 @@ theGame.prototype = {
 
 
     clickBlock : function(sprite) {
+        
+        go = true;
         
         // block récupéré correspondant à la position du clic
         var block = GameModel.getBlock(sprite.x, sprite.y);
