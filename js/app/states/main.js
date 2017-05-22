@@ -103,8 +103,6 @@ theGame.prototype = {
         pioche = this.game.add.sprite(this.game.input.mousePointer.worldX, this.game.input.mousePointer.worldY, 'pioche');
         this.game.world.bringToTop(pioche);
 
-        var go = false;
-        
         // Création graphique des blocks
         // retourne tableau de sprites
         this.generateBlocksView(this.game, this);
@@ -189,8 +187,6 @@ theGame.prototype = {
             var aroundBlocks = block.getAroundBlocks(); 
         }
         
-   
-        
         aroundBlocks.forEach(function(element) {
             var sprite = self.getSprite(element.getX(), element.getY());
             self.showBlock(sprite);
@@ -234,7 +230,6 @@ theGame.prototype = {
         var arrayBlocks = GameModel.blocks;
 
         arrayBlocks.forEach(function (element) {
-            
             
             var graphics = game.add.graphics(0, 0);
             graphics.beginFill(0x000000, 1); 
@@ -280,10 +275,7 @@ theGame.prototype = {
                 }
     
                 //game.world.bringToTop(graphics);
-                
                 sprites.push(sprite);
-
-                
             }
 
         });
@@ -304,7 +296,6 @@ theGame.prototype = {
     },
 
 
-    
     
     /********************************************/
     /* Animation Destruction */
@@ -646,33 +637,24 @@ theGame.prototype = {
 
 
     clickBlock : function(sprite) {
-        
-        go = true;
-        
+    
         // block récupéré correspondant à la position du clic
         var block = GameModel.getBlock(sprite.x, sprite.y);
-        
-        block.printLocation();
-        
         
         // si le block est cassable
         if (block.isBreakable()) {
             
             // animation TNT 
             if (sprite.name == "Tnt"){
-                
                 this.TNTAnimation(sprite, this);
     
             // animation Dynamite    
             } else if(sprite.name == "Dynamite"){
-
                 this.DynamiteAnimation(sprite, this);      
                 
             // animation normal
             } else {
-                
                 this.BlockAnimation(sprite, block, this, false);
-
             }
             
   
