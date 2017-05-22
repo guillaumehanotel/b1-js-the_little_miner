@@ -26,6 +26,6 @@
     // déplacement automatique ou aux flèches directionelles
     const MODE_LIBRE = false;
     
-    const DETAIL_SCORE = false;
+    const DETAIL_SCORE = true;
 
     const MUSIC = true;
