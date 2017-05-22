@@ -37,6 +37,7 @@ theGame.prototype = {
                     
             this.game.camera.y += 1;
             scoreText.y = this.game.camera.y;
+            profText.y = this.game.camera.y;
         
         }
         
@@ -51,6 +52,7 @@ theGame.prototype = {
         
 
         scoreText.y = this.game.camera.y;
+        profText.y = this.game.camera.y;
     },
     
     
@@ -93,6 +95,11 @@ theGame.prototype = {
             fill: '#fff'
         });
         
+        
+        profText = this.game.add.text(250, 250, 'Profondeur: ' + GameModel.getProfondeur(), {
+            fontSize: '23px',
+            fill: '#fff'
+        });
 
     },
     
@@ -282,6 +289,7 @@ theGame.prototype = {
      */
     updateText : function(){
         scoreText.setText("Pioche: "+GameModel.pioche);
+        profText.setText("Profondeur: "+GameModel.getProfondeur());
     },
 
 

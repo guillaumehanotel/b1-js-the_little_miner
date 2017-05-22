@@ -6,6 +6,7 @@ preload.prototype = {
         
         this.game.load.image('gametitle', 'assets/img/accueil.png');
         this.game.load.image('play', 'assets/img/start2.png');
+        this.game.load.image('gameover', 'assets/img/gameover.png');
         this.game.load.spritesheet('torch', 'assets/img/torch.png', 19, 39, 5);
         
     

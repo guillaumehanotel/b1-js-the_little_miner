@@ -5,7 +5,7 @@
     const GAME_HEIGHT = 1320;
     const FRAME_HEIGHT = 650;
     
-    const PICKER_NB_HIT = 75;
+    const PICKER_NB_HIT = 35;
 
 
     /* const RESISTANCE de chaque type */
