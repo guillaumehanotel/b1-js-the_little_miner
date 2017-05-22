@@ -495,6 +495,11 @@ theGame.prototype = {
         // on récupère le block de TNt
         var TNT_Block = GameModel.getBlock(sprite.x, sprite.y);
 
+        
+        var music = this.game.add.audio('BigExplosion');
+        music.play();
+        music.volume -= 0.5;
+        
         // ANIMATION 
         
         var explosion = this.game.add.sprite(sprite.x-150, sprite.y-150, 'explosion_TNT');
@@ -560,6 +565,9 @@ theGame.prototype = {
         
         sprite_array_Dynamite.forEach(function(sprite_touch){
             
+            var music = mygame.add.audio('BigExplosion');
+            music.play();
+            music.volume -= 0.5;
 
             var explosion = mygame.add.sprite(sprite_touch.x-30, sprite_touch.y-30, 'explosion_Dynamite');
             var boom = explosion.animations.add('boom');
@@ -591,6 +599,12 @@ theGame.prototype = {
         // si le block est détruit
         if (destroyed == true) {
                     
+            
+            var music = this.game.add.audio('BreakStone');
+            music.play();
+            music.volume -= 0.8;
+            
+            
             // on affiche l'animation de destruction
             self.destroyBlockView(sprite);
             // on enlève de cache noir des blocks alentours
@@ -598,6 +612,12 @@ theGame.prototype = {
 
         // si il n'est pas détruit et que ce n'est pas de la bedrock
         } else if (destroyed == false && sprite.name != 'Bedrock') {
+            
+            
+            var music = this.game.add.audio('HitStone');
+            music.play();
+            music.volume -= 0.8;
+            
             // on affiche juste l'animaion de fissurage
             self.crackBlockView(sprite);
         }

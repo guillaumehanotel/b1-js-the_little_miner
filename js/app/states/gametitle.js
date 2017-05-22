@@ -5,6 +5,13 @@ gameTitle.prototype = {
     
     
     create: function(){
+        
+            
+        var music = this.game.add.audio('fairytail');
+        music.play();
+        music.volume -= 0.8;
+        
+        
         var gameTitle = this.game.add.sprite(210,180,"gametitle");
 		gameTitle.anchor.setTo(0.5,0.5);
 		var playButton = this.game.add.button(220,370,"play",this.playTheGame,this);

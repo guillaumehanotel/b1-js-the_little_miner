@@ -4,6 +4,11 @@ preload.prototype = {
     
     preload: function(){
         
+        this.game.load.audio('fairytail','assets/music/FairyTail.mp3');
+        this.game.load.audio('BigExplosion','assets/music/BigExplosion.mp3');
+        this.game.load.audio('BreakStone','assets/music/BreakStone.mp3');
+        this.game.load.audio('HitStone','assets/music/HitStone.mp3');
+
         this.game.load.image('gametitle', 'assets/img/accueil.png');
         this.game.load.image('play', 'assets/img/start2.png');
         this.game.load.image('gameover', 'assets/img/gameover.png');
