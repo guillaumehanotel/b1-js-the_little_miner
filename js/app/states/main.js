@@ -13,6 +13,9 @@ theGame.prototype = {
         GameModel.createBlocks();
         this.loadGameView();
         
+        
+
+        
 
     }, 
     
@@ -24,6 +27,12 @@ theGame.prototype = {
         // Au premier block cliqué, la fenetre descend
         
         
+        pioche.position.set(this.game.input.mousePointer.worldX-15, this.game.input.mousePointer.worldY-15);
+
+        this.game.world.bringToTop(pioche);
+        
+        
+        
         if(MODE_LIBRE){
             // Déplacement au curseur pour le débuggage
             if (cursors.up.isDown) {
@@ -33,18 +42,22 @@ theGame.prototype = {
             }
             
         } else {
-                    
-            this.game.camera.y += 1;
-            scoreText.y = this.game.camera.y;
-            profText.y = this.game.camera.y;
-        
+            
+                  
+            if(GameModel.pioche != PICKER_NB_HIT){
+                this.game.camera.y += 1;
+                scoreText.y = this.game.camera.y;
+                profText.y = this.game.camera.y; 
+            }
+              
+            
         }
         
         
         
         
         // Condition de fin d'arret du jeu
-        if (GameModel.pioche <= 0) {
+        if (GameModel.pioche <= 0 /*|| on a dépassé le cadre */) {
             //scoreText.setText("Game Over");
             this.game.state.start("GameOver");
         }
@@ -56,7 +69,20 @@ theGame.prototype = {
     
     
     
-    
+    movePickaxe : function(){
+        
+        var pioche_anim = this.game.add.sprite(this.game.input.mousePointer.worldX, this.game.input.mousePointer.worldY, 'pioche_animation');
+        var hit = pioche_anim.animations.add('hit');
+        pioche_anim.animations.play('hit', 13, false);
+        
+        pioche.visible = false;
+        
+        hit.onComplete.add(function(){
+            pioche_anim.destroy();
+            pioche.visible = true;
+        });
+
+    },
     
     
     
@@ -75,15 +101,19 @@ theGame.prototype = {
         // On ajoute le sprite du ciel à partir de la position (0,0)
         this.game.add.sprite(0, 0, 'sky');
         // On ajoute le sprite du sol à partir de la position (0,360)
-        this.game.add.sprite(0, START_Y, 'ground');
+        var ground = this.game.add.sprite(0, START_Y, 'ground');
+        this.game.world.sendToBack(ground);
         // On défini les limites du jeu s'arretant à 1280px de profondeur
         this.game.world.setBounds(0, 0, 0, GAME_HEIGHT);
         //game.time.slowMotion = 60.0;
 
         cursors = this.game.input.keyboard.createCursorKeys();
         
-        
+        pioche = this.game.add.sprite(this.game.input.mousePointer.worldX, this.game.input.mousePointer.worldY, 'pioche');
+        this.game.world.bringToTop(pioche);
 
+        var go = false;
+        
         // Création graphique des blocks
         // retourne tableau de sprites
         this.generateBlocksView(this.game, this);
@@ -261,14 +291,14 @@ theGame.prototype = {
                 sprite.name = element.type.name;
                 sprite.x = element.location.x;
                 sprite.y = element.location.y;
-                sprite.input.useHandCursor = true;
+                sprite.input.useHandCursor = false;
                 
 
                 if(HIDEBLOCK){
                     self.hideBlock(element, graphics, sprite);
                 }
     
-                game.world.bringToTop(graphics);
+                //game.world.bringToTop(graphics);
                 
                 sprites.push(sprite);
 
@@ -279,6 +309,7 @@ theGame.prototype = {
 
         // ajout d'un listener onClick pour chaque sprite
         blocks.onChildInputDown.add(self.clickBlock, this);
+        blocks.onChildInputDown.add(self.movePickaxe, this);
     },
     
 
@@ -634,6 +665,8 @@ theGame.prototype = {
 
 
     clickBlock : function(sprite) {
+        
+        go = true;
         
         // block récupéré correspondant à la position du clic
         var block = GameModel.getBlock(sprite.x, sprite.y);
