@@ -8,8 +8,9 @@ gameTitle.prototype = {
         
             
         var music = this.game.add.audio('fairytail');
-        music.play();
         music.volume -= 0.8;
+        if(MUSIC)
+            music.play();
         
         
         var gameTitle = this.game.add.sprite(210,180,"gametitle");

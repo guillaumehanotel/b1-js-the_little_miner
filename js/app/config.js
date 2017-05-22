@@ -2,10 +2,9 @@
 
     const START_Y = 360;
     const GAME_WIDTH = 420;
-    const GAME_HEIGHT = 1320;
+    const GAME_HEIGHT = 2700;
     const FRAME_HEIGHT = 650;
-    
-    const PICKER_NB_HIT = 35;
+    const PICKER_NB_HIT = 45;
 
 
     /* const RESISTANCE de chaque type */
@@ -28,4 +27,5 @@
     const MODE_LIBRE = true;
     
     const DETAIL_SCORE = false;
-    
+
+    const MUSIC = false;
