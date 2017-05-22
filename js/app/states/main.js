@@ -16,10 +16,7 @@ theGame.prototype = {
         GameModel.reset();
         GameModel.createBlocks();
         this.loadGameView();
-        
-        
-        
-        
+       
         
         this.miner = this.game.add.sprite(60,280,'miner');
         
@@ -39,9 +36,7 @@ theGame.prototype = {
         
         
         
-        
-        
-        
+
     }, 
     
     
@@ -51,10 +46,25 @@ theGame.prototype = {
         
         // Au premier block cliqué, la fenetre descend
         
-        /*
-        game.camera.y += 1;
-        scoreText.y = game.camera.y;
-        */
+        
+        if(MODE_LIBRE){
+            // Déplacement au curseur pour le débuggage
+            if (cursors.up.isDown) {
+                this.game.camera.y -= 4;
+            } else if (cursors.down.isDown) {
+                this.game.camera.y += 4;
+            }
+            
+        } else {
+                    
+            this.game.camera.y += 1;
+            scoreText.y = this.game.camera.y;
+            profText.y = this.game.camera.y;
+        
+        }
+        
+        
+        
         
         // Condition de fin d'arret du jeu
         if (GameModel.pioche <= 0) {
@@ -62,21 +72,15 @@ theGame.prototype = {
             this.game.state.start("GameOver");
         }
         
-        // Déplacement au curseur pour le débuggage
-        if (cursors.up.isDown) {
-            this.game.camera.y -= 6;
-        }
-        else if (cursors.down.isDown) {
-            this.game.camera.y += 6;
-        }
+
+
         scoreText.y = this.game.camera.y;
-        
-        
+        profText.y = this.game.camera.y;
+
         
         this.game.physics.arcade.collide(this.miner, this.sprites);
         
-        
-        
+
     },
     
     
@@ -118,11 +122,18 @@ theGame.prototype = {
             fill: '#fff'
         });
         
+        
+        profText = this.game.add.text(350, 450,GameModel.getProfondeur()+" m", {
+            fontSize: '23px',
+            fill: '#fff'
+        });
 
     },
     
     
-    
+    /**
+     * Retourne le sprite d'une position (x,y)
+     */
     getSprite : function(x,y){
         var res = null;
         
@@ -136,7 +147,26 @@ theGame.prototype = {
     },
     
     
-    /* Méthode pour montrer le block pris en paramètre */
+    /**
+     * Retourne un tableau de sprite correspondant au tableau de blocks en paramètres
+     */
+    getSprites : function(array, self){
+        
+        var array_res = [];
+        
+        array.forEach(function(block){
+            var sprite = self.getSprite(block.getX(), block.getY());
+            array_res.push(sprite);
+        });
+        
+        return array_res;
+    },
+    
+    
+    
+    /** 
+     * Méthode pour enlever le cache noir du block pris en paramètre 
+     */
     showBlock : function(sprite){
         if(typeof sprite.graph !== 'undefined'){
             sprite.graph.destroy();
@@ -146,12 +176,32 @@ theGame.prototype = {
     
     
     
-    
+    /**
+     * Méthode pour enlever tous les caches noirs du sprite en paramètre
+     */
     showBlocks : function(sprite, self){
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
         
-        var aroundBlocks = block.getAroundBlocks(); 
+        if(sprite.name == "Tnt"){
+
+            // prend les blocks de la zone + ceux autour pour les rendre visible
+            var ATNTBlocks = block.getAroundTNTBlocks();
+            var TNTBlocks =  block.getTNTBlocks();
+            var aroundBlocks = ATNTBlocks.concat(TNTBlocks);
+          
+        } else if(sprite.name == "Dynamite"){
+            
+            var DynamiteBlocks = block.getDynamiteBlocks();
+            var ADynamiteBlocks = block.getAroundDynamiteBlocks();
+            var aroundBlocks = ADynamiteBlocks.concat(DynamiteBlocks);
+            
+            
+        } else {
+            var aroundBlocks = block.getAroundBlocks(); 
+        }
+        
+   
         
         aroundBlocks.forEach(function(element) {
             var sprite = self.getSprite(element.getX(), element.getY());
@@ -163,7 +213,9 @@ theGame.prototype = {
     
     
         
-    /* Méthode pour cacher le block pris en paramètre */
+    /**
+     * Méthode pour mettre un cache noir devant le block pris en paramètre 
+     */
     hideBlock : function(block, graphics, sprite){
         
         if (block.isBreakable() == false) {
@@ -241,7 +293,9 @@ theGame.prototype = {
                 sprite.body.immovable = true;
                 
 
-                self.hideBlock(element, graphics, sprite);
+                if(HIDEBLOCK){
+                    self.hideBlock(element, graphics, sprite);
+                }
     
                 game.world.bringToTop(graphics);
                 
@@ -263,6 +317,7 @@ theGame.prototype = {
      */
     updateText : function(){
         scoreText.setText("Pioche: "+GameModel.pioche);
+        profText.setText(GameModel.getProfondeur()+" m");
     },
 
 
@@ -272,30 +327,36 @@ theGame.prototype = {
     /* Animation Destruction */
 
 
+    /**
+     * Méthode destroyBlockView
+     * Sert à récupérer le block cliqué pour appeler  
+     * la méthode destroyAnimation, puis détruire le sprite
+     */
     destroyBlockView : function(sprite){
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
+        
         var destroy = this.destroyAnimation(block, sprite);
         
-        
-        destroy.onComplete.add(function(){
-            if(sprite.img){
+        destroy.onComplete.add(function () {
+            
+            if (sprite.img) {
                 sprite.img.destroy();
             }
             sprite.destroy();
-        },this);
+        }, this);
     },
 
-
     
-    
-    
-
+    /**
+     * Méthode destroyAnimation
+     * Prend en paramètre un block et son sprite pour faire jouer l'animation 
+     * de fissurage complète  
+     */
     destroyAnimation : function(block, sprite){
         
         var resi_init = block.getInitialResistance();
         var resi_actuel = block.getResistance();
-        
         
         if(sprite.img){
             sprite.img.destroy();
@@ -308,12 +369,10 @@ theGame.prototype = {
             case 2 :
                 begin_frame = 5;
                 break;
-                
             case 3 : 
             case 4 : 
                 begin_frame = 6;
                 break;
-                
             default :
                 begin_frame = 0;
                 break;
@@ -321,7 +380,7 @@ theGame.prototype = {
         
         
         var destroy = cracks.animations.add('destroy');
-        cracks.animations.play('destroy', 20, false, true);
+        cracks.animations.play('destroy', 15, false, true);
         cracks.animations.currentAnim.setFrame(begin_frame,true);
 
         return destroy;
@@ -330,11 +389,14 @@ theGame.prototype = {
 
 
     
-    
-    
     /*********************************************/
     /* Animation Fissurage */
     
+    /**
+     * Méthode crackBlockView
+     * Sert à récupérer le block cliqué pour appeler successivement 
+     * les méthode crackAnimation, puis crackImage
+     */
     crackBlockView : function(sprite){
         
         var block = GameModel.getBlock(sprite.x, sprite.y);
@@ -352,7 +414,12 @@ theGame.prototype = {
     
     
     
-    // l'image qui restera affiché après la fin de l'animation
+
+    /**
+     * Méthode crackImage
+     * méthode appelé après la fin de l'animation de fissurage, pour afficher la bonne  *image de fissurage
+     *
+     */
     crackImage : function(block, sprite){
         
         var resi_init = block.getInitialResistance();
@@ -389,7 +456,13 @@ theGame.prototype = {
     
     
     
-    // retourne l'animation
+
+    /**
+     * Méthode crackAnimation
+     * Prend en paramètre le bloc et le sprite associé
+     * Va jouer la bonne animation de fissurage en fonction de la résistance de base et  * de la résistance actuelle
+     * Retourne l'animation
+     */
     crackAnimation : function(block, sprite){
         
         var resi_init = block.getInitialResistance();
@@ -433,7 +506,7 @@ theGame.prototype = {
         }
         
         var destroy = cracks.animations.add('destroy');
-        cracks.animations.play('destroy', 20, false, true);
+        cracks.animations.play('destroy', 15, false, true);
         cracks.animations.currentAnim.setFrame(begin_frame,true);
 
         return destroy;
@@ -442,10 +515,150 @@ theGame.prototype = {
     
         
     
+    /**
+     * TNT Animation
+     */
     
-    /************************************************************************************/
-    /***********************************   CONTROLLER  **********************************/
-    /************************************************************************************/
+    TNTAnimation : function(sprite, self) {
+    
+        // on récupère le block de TNt
+        var TNT_Block = GameModel.getBlock(sprite.x, sprite.y);
+
+        
+        var music = this.game.add.audio('BigExplosion');
+        music.play();
+        music.volume -= 0.5;
+        
+        // ANIMATION 
+        
+        var explosion = this.game.add.sprite(sprite.x-150, sprite.y-150, 'explosion_TNT');
+        var boom = explosion.animations.add('boom');
+        explosion.animations.play('boom', 15, false);
+        
+        var array_Blocks = TNT_Block.getTNTBlocks();
+        
+        //SPRITE
+        
+        // on efface le sprite de la TNT
+        sprite.destroy();
+        
+        // on découvre les sprites alentours
+        this.showBlocks(sprite, self);
+        
+        // sprite des bloks dans la zone
+        var sprite_array_TNT = this.getSprites(array_Blocks, this);
+    
+        GameModel.pioche--;
+        
+        // on parcourt tous les sprites des blocks touchés
+        sprite_array_TNT.forEach(function (sprite_touch) {
+            
+            // on récupère leurs block
+            var block = GameModel.getBlock(sprite_touch.x, sprite_touch.y);
+              
+            if(!block.destroyed)
+                self.BlockAnimation(sprite_touch, block, self, true);
+            
+            // détruire les images de fissures et effacer les blocks si pas bedrock
+            if (sprite_touch.img && sprite_touch.name != 'Bedrock') 
+                sprite_touch.img.destroy();
+            //sprite_touch.destroy();   
+            
+        });
+
+        // appeler clickblock pour chaque sprite de la TNT
+    },
+    
+    
+
+    DynamiteAnimation : function(sprite, self){
+        
+        // le block de dynamite
+        var Dynamite_Block = GameModel.getBlock(sprite.x, sprite.y);
+        
+        // on détruit son sprite
+        sprite.destroy();
+        
+        // on récupère les blocks touchés
+        var array_Blocks = Dynamite_Block.getDynamiteBlocks();
+        
+        // on montre les blocks adjacents
+        this.showBlocks(sprite, self);
+        
+        var mygame = this.game;
+        
+        GameModel.pioche--;
+        
+        // on récupère les sprites des blocks touchés
+        var sprite_array_Dynamite = this.getSprites(array_Blocks, this);
+        
+        sprite_array_Dynamite.forEach(function(sprite_touch){
+            
+            var music = mygame.add.audio('BigExplosion');
+            music.play();
+            music.volume -= 0.5;
+
+            var explosion = mygame.add.sprite(sprite_touch.x-30, sprite_touch.y-30, 'explosion_Dynamite');
+            var boom = explosion.animations.add('boom');
+            explosion.animations.play('boom', 50, false);
+        
+            
+            // on récupère leurs block
+            var block = GameModel.getBlock(sprite_touch.x, sprite_touch.y);
+            
+            if(!block.destroyed)
+                self.BlockAnimation(sprite_touch, block, self, true);
+        
+            // détruire les images de fissures et effacer les blocks si pas bedrock
+            if (sprite_touch.img && sprite_touch.name != 'Bedrock') 
+                sprite_touch.img.destroy();
+   
+        });
+        
+
+    },
+    
+    BlockAnimation : function(sprite, block, self, isCollateral){
+        
+        // si les blocks touchés ne sont pas de la TNT ou dynamite
+        if(block.getType() != TYPEBLOCK.TNT || block.getType() != TYPEBLOCK.DYNAMITE)
+            // variable destroyed à vrai ou faux selon si le block est détruit ou non
+            var destroyed = block.hitBlock(isCollateral);
+                     
+        // si le block est détruit
+        if (destroyed == true) {
+                    
+            
+            var music = this.game.add.audio('BreakStone');
+            music.play();
+            music.volume -= 0.8;
+            
+            
+            // on affiche l'animation de destruction
+            self.destroyBlockView(sprite);
+            // on enlève de cache noir des blocks alentours
+            self.showBlocks(sprite, this);
+
+        // si il n'est pas détruit et que ce n'est pas de la bedrock
+        } else if (destroyed == false && sprite.name != 'Bedrock') {
+            
+            
+            var music = this.game.add.audio('HitStone');
+            music.play();
+            music.volume -= 0.8;
+            
+            // on affiche juste l'animaion de fissurage
+            self.crackBlockView(sprite);
+        }
+           
+    },
+    
+        
+    
+
+    /************************************************/
+    /******************   CONTROLLER  ***************/
+    /************************************************/
     /* Méthode controller -> quand un évenement est joué / un block est cliqué */
 
 
@@ -456,26 +669,32 @@ theGame.prototype = {
         
         block.printLocation();
         
-        // si le block est cassable
-        if(block.isBreakable()){
-            
-            // variable destroyed à vrai ou faux selon si le block est détruit ou non
-            var destroyed = block.hitBlock();
-            
-
-            if (destroyed == true) {
-                this.destroyBlockView(sprite);
-                this.showBlocks(sprite, this);
-            } else if (destroyed == false && sprite.name != 'Bedrock') {
-                this.crackBlockView(sprite);
-            }
-                this.updateText();
-        }
         
-    }
+        // si le block est cassable
+        if (block.isBreakable()) {
+            
+            // animation TNT 
+            if (sprite.name == "Tnt"){
+                
+                this.TNTAnimation(sprite, this);
     
-}
+            // animation Dynamite    
+            } else if(sprite.name == "Dynamite"){
 
+                this.DynamiteAnimation(sprite, this);      
+                
+            // animation normal
+            } else {
+                
+                this.BlockAnimation(sprite, block, this, false);
+
+            }
+            
+  
+            this.updateText();
+        }
+    }
+}
    
 
 
