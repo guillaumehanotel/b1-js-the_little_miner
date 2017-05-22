@@ -2,7 +2,7 @@
 
     const START_Y = 360;
     const GAME_WIDTH = 420;
-    const GAME_HEIGHT = 2700;
+    const GAME_HEIGHT = 3000;
     const FRAME_HEIGHT = 650;
     const PICKER_NB_HIT = 40;
 
@@ -28,4 +28,4 @@
     
     const DETAIL_SCORE = false;
 
-    const MUSIC = false;
+    const MUSIC = true;

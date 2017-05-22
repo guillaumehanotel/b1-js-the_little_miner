@@ -31,7 +31,7 @@ gameTitle.prototype = {
     },
     
     update: function(){
-        pioche.position.set(this.game.input.mousePointer.worldX-20, this.game.input.mousePointer.worldY-20);
+        pioche.position.set(this.game.input.mousePointer.worldX-10, this.game.input.mousePointer.worldY-10);
 
         this.game.world.bringToTop(pioche);
     },

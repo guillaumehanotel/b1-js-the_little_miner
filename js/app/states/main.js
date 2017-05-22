@@ -27,7 +27,7 @@ theGame.prototype = {
         // Au premier block cliqué, la fenetre descend
         
         
-        pioche.position.set(this.game.input.mousePointer.worldX-20, this.game.input.mousePointer.worldY-20);
+        pioche.position.set(this.game.input.mousePointer.worldX-15, this.game.input.mousePointer.worldY-15);
 
         this.game.world.bringToTop(pioche);
         
@@ -73,7 +73,7 @@ theGame.prototype = {
         
         var pioche_anim = this.game.add.sprite(this.game.input.mousePointer.worldX, this.game.input.mousePointer.worldY, 'pioche_animation');
         var hit = pioche_anim.animations.add('hit');
-        pioche_anim.animations.play('hit', 10, false);
+        pioche_anim.animations.play('hit', 13, false);
         
         pioche.visible = false;
         
