@@ -129,11 +129,8 @@
                 GameModel.pioche--;
         }
 
-
         // on décrémente la résistance du block
         this.resistance--;
-        
-        
         
         // si c'est de la TNT ou de la dynamite
         if(this.type == TYPEBLOCK.TNT || this.type == TYPEBLOCK.DYNAMITE){
@@ -143,9 +140,6 @@
             
         // si c'est un block normal    
         } else {
-            
-            
-
             if(this.resistance == 0){
                 
                 GameModel.incrementOreScore(this);
@@ -153,13 +147,9 @@
                 // met breakable à true à toutes les cases autour du/des block(s) détruit(s)
                 this.propagateBreakable();
             }     
-        }
-            
+        } 
         return this.destroyed;
-
     }
-    
-
     
     /**
      * Méthode propagateBreakable
@@ -210,7 +200,10 @@
         
     }
 
-    
+    /**
+     * Méthode getAroundDynamiteBlocks
+     * Retourne un tableau de tous les blocks autour des blocks touchés par la dynamite
+     */
     Block.prototype.getAroundDynamiteBlocks = function(){
         
         var Blocks = this.getDynamiteBlocks();

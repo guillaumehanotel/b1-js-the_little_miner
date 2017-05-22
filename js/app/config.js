@@ -26,6 +26,8 @@
     // déplacement automatique ou aux flèches directionelles
     const MODE_LIBRE = false;
     
+    // détail des blocks détruits dans le score
     const DETAIL_SCORE = true;
 
+    // active musique
     const MUSIC = true;

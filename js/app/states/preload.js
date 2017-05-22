@@ -11,8 +11,6 @@ preload.prototype = {
         
         this.game.canvas.style.cursor = 'none';
         
-        
-        
         this.game.load.audio('fairytail','assets/music/FairyTail.mp3');
         this.game.load.audio('BigExplosion','assets/music/BigExplosion.mp3');
         this.game.load.audio('BreakStone','assets/music/BreakStone.mp3');
