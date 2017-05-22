@@ -6,6 +6,7 @@ gameTitle.prototype = {
     
     create: function(){
         
+        pioche = this.game.add.sprite(this.game.input.mousePointer.worldX, this.game.input.mousePointer.worldY, 'pioche');
             
         var music = this.game.add.audio('fairytail');
         music.volume -= 0.8;
@@ -27,6 +28,12 @@ gameTitle.prototype = {
         var burn = torch2.animations.add('burn');
         torch2.animations.play('burn', 11, true);
         
+    },
+    
+    update: function(){
+        pioche.position.set(this.game.input.mousePointer.worldX-20, this.game.input.mousePointer.worldY-20);
+
+        this.game.world.bringToTop(pioche);
     },
     
     
