@@ -51,7 +51,6 @@ theGame.prototype = {
                 profText.y = this.game.camera.y; 
             }
               
-            
         }
         
         if(typeof tap_y !== 'undefined')
@@ -59,7 +58,6 @@ theGame.prototype = {
         
         // Condition de fin d'arret du jeu
         if (GameModel.pioche <= 0 || res_y < this.game.camera.y-140) {
-            //scoreText.setText("Game Over");
             this.game.state.start("GameOver");
         }
         
