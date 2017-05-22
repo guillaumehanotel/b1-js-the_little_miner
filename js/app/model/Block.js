@@ -133,6 +133,7 @@
         this.resistance--;
         
         
+        
         // si c'est de la TNT ou de la dynamite
         if(this.type == TYPEBLOCK.TNT || this.type == TYPEBLOCK.DYNAMITE){
 
@@ -143,6 +144,8 @@
         } else {
 
             if(this.resistance == 0){
+                
+                GameModel.incrementOreScore(this);
                 this.destroyed = true;
                 // met breakable à true à toutes les cases autour du/des block(s) détruit(s)
                 this.propagateBreakable();

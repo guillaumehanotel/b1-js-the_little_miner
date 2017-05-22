@@ -5,7 +5,7 @@
     const GAME_HEIGHT = 1320;
     const FRAME_HEIGHT = 650;
     
-    const PICKER_NB_HIT = 75;
+    const PICKER_NB_HIT = 35;
 
 
     /* const RESISTANCE de chaque type */
@@ -21,7 +21,11 @@
     const RESISTANCE_BONUS = 1;
     const RESISTANCE_DYNAMITE = 1;
 
+    // cache noir ou non
     const HIDEBLOCK = true;
+
+    // déplacement automatique ou aux flèches directionelles
+    const MODE_LIBRE = true;
     
     
     
