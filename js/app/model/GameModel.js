@@ -156,6 +156,11 @@
         reset : function(){
             this.blocks = null;
             this.pioche = PICKER_NB_HIT;
+            this.profondeur = 0;
+            this.ore_score.coal = 0;
+            this.ore_score.gold = 0;
+            this.ore_score.diamond = 0;
+            this.ore_score.iron = 0;
         }
         
 
