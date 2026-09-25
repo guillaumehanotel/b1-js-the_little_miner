@@ -36,6 +36,8 @@ export interface GameOverData {
 const BLAST_STEP_MS = 45;
 /** Opacité du brouillard sur un minerai quand on a le Détecteur. */
 const DETECTOR_FOG_ALPHA = 0.55;
+/** « Pénombre » : bloc vu mais hors d'atteinte (pas collé à un trou). */
+const SHADE_ALPHA = 0.5;
 
 const center = (cell: Cell) => ({
   x: cell.col * BLOCK_SIZE + BLOCK_SIZE / 2,
@@ -184,10 +186,8 @@ export class GameScene extends Phaser.Scene {
       this.blocks.set(cell, this.add.image(x, y, texture).setDepth(10));
       const max = BLOCK_TYPES[cell.kind].resistance;
       if (cell.hp < max) this.cracks.set(cell, this.add.sprite(x, y, 'cracks', crackFrame(cell.hp, max)).setDepth(11));
-      if (!cell.revealed) {
-        const fog = this.add.rectangle(x, y, BLOCK_SIZE, BLOCK_SIZE, 0x0b0705).setDepth(20);
-        this.fog.set(cell, fog.setAlpha(this.fogAlpha(cell)));
-      }
+      const alpha = this.fogAlpha(cell);
+      if (alpha > 0) this.fog.set(cell, this.add.rectangle(x, y, BLOCK_SIZE, BLOCK_SIZE, 0x0b0705, 1).setDepth(20).setAlpha(alpha));
     }
   }
 
@@ -201,8 +201,37 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Trois états lisibles d'un coup d'œil : noir = inconnu, pénombre = vu mais pas atteignable,
+   * pleine lumière = on peut frapper.
+   */
   private fogAlpha(cell: Cell): number {
-    return this.model.mods.detector && isOre(cell.kind) ? DETECTOR_FOG_ALPHA : 1;
+    if (cell.destroyed) return 0;
+    if (!cell.revealed) return this.model.mods.detector && isOre(cell.kind) ? DETECTOR_FOG_ALPHA : 1;
+    return this.model.isReachable(cell) ? 0 : SHADE_ALPHA;
+  }
+
+  /** Amène le voile d'une case (s'il est dessiné) à l'opacité qui correspond à son état. */
+  private refreshFog(cell: Cell): void {
+    if (!this.renderedRows.has(cell.row)) return;
+    const target = this.fogAlpha(cell);
+    let fog = this.fog.get(cell);
+    if (!fog) {
+      if (target === 0) return;
+      const { x, y } = center(cell);
+      fog = this.add.rectangle(x, y, BLOCK_SIZE, BLOCK_SIZE, 0x0b0705, 1).setDepth(20).setAlpha(0);
+      this.fog.set(cell, fog);
+    }
+    if (fog.alpha === target) return;
+    const rect = fog;
+    this.tweens.killTweensOf(rect);
+    if (target === 0) this.fog.delete(cell);
+    this.tweens.add({
+      targets: rect,
+      alpha: target,
+      duration: 260,
+      onComplete: () => target === 0 && rect.destroy(),
+    });
   }
 
   private cellAt(pointer: Phaser.Input.Pointer): Cell | undefined {
@@ -215,9 +244,12 @@ export class GameScene extends Phaser.Scene {
     const pointer = this.input.activePointer;
     pointer.updateWorldPoint(this.cameras.main);
     const cell = pointer.wasTouch ? undefined : this.cellAt(pointer);
-    const visible = !!cell && !this.ended && this.model.canHit(cell);
-    this.hover.setVisible(visible);
-    if (visible) this.hover.setPosition(center(cell).x, center(cell).y);
+    // Cadre blanc sur un bloc frappable, rouge sur un bloc vu mais hors d'atteinte.
+    const seen = !!cell && !this.ended && cell.revealed && !cell.destroyed;
+    this.hover.setVisible(seen);
+    if (!seen) return;
+    const ok = this.model.canHit(cell);
+    this.hover.setPosition(center(cell).x, center(cell).y).setStrokeStyle(3, ok ? 0xffffff : 0xff5a4a, ok ? 0.7 : 0.9);
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
@@ -225,7 +257,10 @@ export class GameScene extends Phaser.Scene {
     const cell = this.cellAt(pointer);
     if (!cell) return;
     const events = this.model.hit(cell.col, cell.row);
-    if (!events) return;
+    if (!events) {
+      if (cell.revealed && !cell.destroyed && !this.model.isReachable(cell)) this.refuse(cell);
+      return;
+    }
 
     // Comme l'original, l'écran ne part qu'au premier vrai coup (taper la bedrock ne compte pas).
     if (events.some((e) => e.type !== 'bump')) this.started = true;
@@ -243,6 +278,17 @@ export class GameScene extends Phaser.Scene {
       // On laisse les animations finir avant d'afficher le score.
       this.time.delayedCall(1100, () => this.end('picks'));
     }
+  }
+
+  /** Clic sur un bloc hors d'atteinte : croix rouge et petit bruit sourd, sans coûter de coup. */
+  private refuse(cell: Cell): void {
+    const { x, y } = center(cell);
+    playSfx(this, 'bump', 0.6);
+    const cross = this.add.graphics({ x, y }).setDepth(45);
+    cross.lineStyle(5, 0xff5a4a, 0.9).lineBetween(-14, -14, 14, 14).lineBetween(14, -14, -14, 14);
+    this.tweens.add({ targets: cross, alpha: 0, scale: 1.3, duration: 450, onComplete: () => cross.destroy() });
+    const block = this.blocks.get(cell);
+    if (block) this.tweens.add({ targets: block, x: x + 4, duration: 40, yoyo: true, repeat: 2 });
   }
 
   /** Met la partie en pause pour la roulette d'un coffre, sinon pour le choix de carte. */
@@ -272,7 +318,7 @@ export class GameScene extends Phaser.Scene {
   private afterOverlay(): void {
     this.overlayOpen = false;
     this.scene.setVisible(true, 'hud');
-    for (const [cell, fog] of this.fog) fog.setAlpha(this.fogAlpha(cell));
+    for (const row of this.renderedRows) for (const cell of this.model.grid.rowCells(row)) this.refreshFog(cell);
     this.emitState();
     if (this.pendingChests.length > 0 || this.model.awaitingChoice) {
       this.scheduleOverlay(150);
@@ -351,6 +397,9 @@ export class GameScene extends Phaser.Scene {
       }
 
       case 'break':
+        // Le trou rend accessibles les voisins : leur pénombre se lève.
+        this.refreshFog(cell);
+        for (const n of this.model.grid.neighbours(cell)) this.refreshFog(n);
         playSfx(this, 'break');
         this.debris.burst(cell.kind, x, y, 14);
         this.cracks.get(cell)?.destroy();
@@ -382,8 +431,8 @@ export class GameScene extends Phaser.Scene {
         this.explosion(cell, event.targets, event.style);
         block?.destroy();
         this.blocks.delete(cell);
-        this.fog.get(cell)?.destroy();
-        this.fog.delete(cell);
+        this.refreshFog(cell);
+        for (const n of this.model.grid.neighbours(cell)) this.refreshFog(n);
         break;
 
       case 'gain':
@@ -405,12 +454,9 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.flash(250, 255, 216, 74);
         break;
 
-      case 'reveal': {
-        const fog = this.fog.get(cell);
-        this.fog.delete(cell);
-        if (fog) this.tweens.add({ targets: fog, alpha: 0, duration: 260, onComplete: () => fog.destroy() });
+      case 'reveal':
+        this.refreshFog(cell);
         break;
-      }
     }
   }
 

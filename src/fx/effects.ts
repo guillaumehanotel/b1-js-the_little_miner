@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { BLOCK_TYPES, type BlockKind } from '../model/blockTypes';
+import { meta } from '../meta';
 import { MAX_SLOTS, PERKS, PERKS_BY_ID, type Perk, type PerkRarity } from '../model/perks';
 
 export const FONT = '"Press Start 2P", monospace';
@@ -226,4 +227,26 @@ export function buildStrip(
     }
   }
   return strip;
+}
+
+/** Bouton encadré vers l'Atelier ; il pulse avec une pastille verte quand un achat est possible. */
+export function workshopButton(scene: Phaser.Scene, x: number, y: number, width = 240, height = 56) {
+  const button = scene.add.container(x, y);
+  const frame = scene.add.rectangle(0, 0, width, height, 0x1f1610, 0.95).setStrokeStyle(3, 0x5decf5);
+  const big = height >= 50;
+  button.add([
+    frame,
+    scene.add.text(-width / 2 + 20, 0, 'Atelier', textStyle(big ? 16 : 12, '#5decf5')).setOrigin(0, 0.5),
+    scene.add.image(width / 2 - 68, 0, 'diamond_block').setScale(big ? 0.4 : 0.3),
+    scene.add.text(width / 2 - 48, 0, String(meta.gems), textStyle(big ? 14 : 12)).setOrigin(0, 0.5),
+  ]);
+  if (meta.canBuySomething()) {
+    button.add(scene.add.circle(width / 2 - 4, -height / 2 + 4, 7, 0x8cff6b).setStrokeStyle(2, 0x1a0f08));
+    scene.tweens.add({ targets: frame, strokeAlpha: 0.35, duration: 600, yoyo: true, repeat: -1 });
+  }
+  button.setSize(width, height).setInteractive();
+  button.on('pointerover', () => scene.tweens.add({ targets: button, scale: 1.06, duration: 120 }));
+  button.on('pointerout', () => scene.tweens.add({ targets: button, scale: 1, duration: 120 }));
+  button.on('pointerdown', () => scene.scene.start('workshop'));
+  return button;
 }

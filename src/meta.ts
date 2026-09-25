@@ -46,6 +46,14 @@ export const meta = {
     return true;
   },
 
+  /** Au moins un achat possible à l'Atelier avec les gemmes actuelles. */
+  canBuySomething(): boolean {
+    const gems = storage.gems;
+    const perk = PERKS.some((p) => p.cost > 0 && !meta.isUnlocked(p) && p.cost <= gems);
+    const token = (Object.keys(TOKEN_UPGRADES) as TokenKind[]).some((k) => (meta.tokenCost(k) ?? Infinity) <= gems);
+    return perk || token;
+  },
+
   buy(perk: Perk): boolean {
     if (meta.isUnlocked(perk) || storage.gems < perk.cost) return false;
     storage.gems = storage.gems - perk.cost;

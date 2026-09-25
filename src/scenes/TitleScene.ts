@@ -1,8 +1,7 @@
 import * as Phaser from 'phaser';
 import { GAME_WIDTH, GROUND_Y, VIEW_HEIGHT } from '../config';
 import { startMusic, toggleMute } from '../fx/audio';
-import { imageButton, pickaxeCursor, textStyle } from '../fx/effects';
-import { meta } from '../meta';
+import { imageButton, pickaxeCursor, textStyle, workshopButton } from '../fx/effects';
 import { storage } from '../storage';
 
 export class TitleScene extends Phaser.Scene {
@@ -29,16 +28,10 @@ export class TitleScene extends Phaser.Scene {
     if (best > 0) {
       this.add.text(GAME_WIDTH / 2, 440, `Record : ${best}`, textStyle(16, '#ffd84a')).setOrigin(0.5);
     }
-    const workshop = this.add.container(GAME_WIDTH / 2, 490, [
-      this.add.text(-24, 0, 'Atelier', textStyle(12, '#5decf5')).setOrigin(1, 0.5),
-      this.add.image(-4, 0, 'diamond_block').setScale(0.3),
-      this.add.text(12, 0, String(meta.gems), textStyle(12)).setOrigin(0, 0.5),
-    ]);
-    workshop.setSize(220, 30).setInteractive();
-    workshop.on('pointerdown', () => this.scene.start('workshop'));
+    workshopButton(this, GAME_WIDTH / 2, 515);
     this.input.keyboard?.once('keydown-A', () => this.scene.start('workshop'));
     this.add
-      .text(GAME_WIDTH / 2, 550, '40 coups de pioche.\nUne carte à chaque palier.', {
+      .text(GAME_WIDTH / 2, 590, '40 coups de pioche.\nUne carte à chaque palier.', {
         ...textStyle(10, '#e8d5b0'),
         align: 'center',
         lineSpacing: 8,

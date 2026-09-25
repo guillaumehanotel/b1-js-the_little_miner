@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { GAME_WIDTH, VIEW_HEIGHT } from '../config';
-import { imageButton, pickaxeCursor, textStyle } from '../fx/effects';
+import { imageButton, pickaxeCursor, textStyle, workshopButton } from '../fx/effects';
 import { BLOCK_TYPES, ORE_KINDS } from '../model/blockTypes';
 import type { GameOverData } from './GameScene';
 
@@ -58,13 +58,12 @@ export class GameOverScene extends Phaser.Scene {
     this.tweens.add({ targets: gems, alpha: 1, delay: 200 + lines.length * 120, duration: 300 });
 
     const replay = () => this.scene.start('game');
-    imageButton(this, cx, 540, 'play', replay).setScale(0.7);
-    const workshop = this.add.text(cx, 596, 'Atelier', textStyle(10, '#5decf5')).setOrigin(0.5).setInteractive();
-    workshop.on('pointerdown', () => this.scene.start('workshop'));
+    imageButton(this, cx, 528, 'play', replay).setScale(0.7);
+    workshopButton(this, cx, 598, 200, 42);
     this.input.keyboard?.once('keydown-SPACE', replay);
     this.input.keyboard?.once('keydown-ENTER', replay);
 
-    this.add.text(cx, VIEW_HEIGHT - 16, 'Musique : Fairy Tail, version 8-bit', textStyle(8, '#8a7658')).setOrigin(0.5);
+    this.add.text(cx, VIEW_HEIGHT - 10, 'Musique : Fairy Tail, version 8-bit', textStyle(8, '#8a7658')).setOrigin(0.5);
     pickaxeCursor(this);
     this.cameras.main.fadeIn(400);
   }
