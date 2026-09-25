@@ -34,11 +34,11 @@ export const LAMP_ROWS = 6;
 export const MAGNET_ROWS = 6;
 export const CHICKEN_PICKS = 10;
 export const SKIP_PICKS = 3;
-/** Le coffre donne 1, 3 ou 5 améliorations (70 / 25 / 5 %). */
+/** Le coffre donne 1, 2 ou 3 améliorations (80 / 17 / 3 %) : un bonus, pas la source principale. */
 export const CHEST_ROLLS: [count: number, chance: number][] = [
-  [5, 0.05],
-  [3, 0.25],
-  [1, 0.7],
+  [3, 0.03],
+  [2, 0.17],
+  [1, 0.8],
 ];
 
 /**
@@ -225,8 +225,9 @@ export class MinerGame {
   }
 
   /**
-   * Coffre : améliorations choisies automatiquement, comme dans Vampire Survivors —
-   * évolution prête d'abord, puis montée de niveau, puis nouvelle carte, sinon Casse-croûte.
+   * Coffre : améliorations choisies automatiquement, comme dans Vampire Survivors.
+   * L'évolution prête passe en premier ; ensuite, jamais deux fois la même carte dans un coffre
+   * (montée de niveau ou nouvelle carte, au hasard). Casse-croûte si plus rien n'est possible.
    */
   private openChest(): Perk[] {
     let roll = this.rng();
@@ -235,10 +236,15 @@ export class MinerGame {
     for (let i = 0; i < count; i++) {
       const state = this.drawState;
       const evolution = this.pool.find((p) => evolutionReady(p, state));
-      const eligible = eligiblePerks(this.pool, state).filter((p) => !p.instant);
-      const levelUps = eligible.filter((p) => this.levelOf(p.id) > 0);
-      const options = levelUps.length > 0 ? levelUps : eligible;
-      const perk = evolution ?? options[Math.floor(this.rng() * options.length)] ?? SNACK;
+      const options = eligiblePerks(this.pool, state).filter((p) => !p.instant && !gained.includes(p));
+      const perk = evolution ?? options[Math.floor(this.rng() * options.length)];
+      if (!perk) {
+        if (gained.length === 0) {
+          this.take(SNACK);
+          gained.push(SNACK);
+        }
+        break;
+      }
       this.take(perk);
       gained.push(perk);
     }

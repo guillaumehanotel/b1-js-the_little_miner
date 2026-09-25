@@ -299,6 +299,12 @@ describe('paliers et cartes', () => {
   });
 });
 
+/** RNG qui renvoie d'abord les valeurs données, puis du hasard. */
+function sequence(values: number[]): () => number {
+  let i = 0;
+  return () => (i < values.length ? values[i++] : Math.random());
+}
+
 /** Donne directement une carte (comme si on l'avait choisie). */
 function give(g: MinerGame, id: string, times = 1): void {
   for (let i = 0; i < times; i++) {
@@ -423,7 +429,7 @@ describe('blocs spéciaux', () => {
     expect(g.ores.diamond).toBe(0); // encore dans le noir
   });
 
-  it('Coffre : 1, 3 ou 5 améliorations appliquées tout de suite', () => {
+  it('Coffre : 1, 2 ou 3 améliorations, jamais deux fois la même', () => {
     const counts = new Set<number>();
     for (let i = 0; i < 200; i++) {
       const g = game({ '0,1': 'chest' });
@@ -431,12 +437,25 @@ describe('blocs spéciaux', () => {
       const chest = g.hit(0, 1)!.find((e) => e.type === 'chest');
       if (chest?.type !== 'chest') throw new Error('pas de coffre');
       counts.add(chest.perks.length);
+      expect(new Set(chest.perks.map((p) => p.id)).size).toBe(chest.perks.length);
       // Une évolution remplace sa base : elle compte pour 1 mais retire les niveaux de la base.
       expect(Object.values(g.owned).every((level) => level >= 1)).toBe(true);
       expect(Object.keys(g.owned).length).toBeLessThanOrEqual(MAX_SLOTS);
       expect(Object.keys(g.owned).some((id) => g.banned.has(id))).toBe(false);
     }
-    expect([...counts].sort()).toEqual([1, 3, 5]);
+    expect([...counts].sort()).toEqual([1, 2, 3]);
+  });
+
+  it('Coffre : avec une seule carte possédée, il en ajoute d\'autres au lieu de la monter 3 fois', () => {
+    for (let i = 0; i < 50; i++) {
+      const g = new MinerGame({ grid: gridWith({ '0,1': 'chest' }), rng: sequence([0.01]) });
+      give(g, 'prospector');
+      g.hit(0, 0);
+      const chest = g.hit(0, 1)!.find((e) => e.type === 'chest');
+      if (chest?.type !== 'chest') throw new Error('pas de coffre');
+      expect(chest.perks).toHaveLength(3);
+      expect(g.levelOf('prospector')).toBeLessThanOrEqual(2);
+    }
   });
 
   it('Coffre : donne l\'évolution prête en priorité', () => {
