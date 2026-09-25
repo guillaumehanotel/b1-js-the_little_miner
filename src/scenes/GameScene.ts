@@ -13,7 +13,8 @@ import { playSfx, toggleMute } from '../fx/audio';
 import { Debris, floatingText, pickaxeCursor, textStyle } from '../fx/effects';
 import { meta } from '../meta';
 import { BLOCK_TYPES, isOre } from '../model/blockTypes';
-import { type GameEvent, MinerGame } from '../model/game';
+import { type GameEvent, HOURGLASS_MS, MinerGame } from '../model/game';
+import type { Perk } from '../model/perks';
 import type { Cell } from '../model/grid';
 import { type Layer, layerAt } from '../model/layers';
 import { storage } from '../storage';
@@ -60,6 +61,14 @@ export class GameScene extends Phaser.Scene {
   private lastHitY = 0;
   private started = false;
   private ended = false;
+  /** Coffres ouverts dont la roulette n'a pas encore été montrée. */
+  private pendingChests: Perk[][] = [];
+  /** Sablier : temps de gel restant, décompté seulement quand la partie tourne (pas pendant les pauses). */
+  private frozenMs = 0;
+  /** Un écran (coffre ou cartes) est ouvert ou sur le point de l'être. */
+  private overlayOpen = false;
+  private overlayTimer?: Phaser.Time.TimerEvent;
+  private freezeText!: Phaser.GameObjects.Text;
 
   constructor() {
     super('game');
@@ -72,7 +81,11 @@ export class GameScene extends Phaser.Scene {
     this.renderedRows.clear();
     this.started = false;
     this.ended = false;
-    this.model = new MinerGame({ pool: meta.pool() });
+    this.pendingChests = [];
+    this.frozenMs = 0;
+    this.overlayOpen = false;
+    this.overlayTimer = undefined;
+    this.model = new MinerGame({ pool: meta.pool(), rerolls: meta.tokens('reroll'), banishes: meta.tokens('banish') });
     this.layer = layerAt(0);
 
     // Fond de galerie en boucle, fixé à l'écran et décalé avec la caméra ; le ciel passe devant.
@@ -97,11 +110,16 @@ export class GameScene extends Phaser.Scene {
     this.syncRows();
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
-    this.events.on(Phaser.Scenes.Events.RESUME, this.afterChoice, this);
+    this.events.on(Phaser.Scenes.Events.RESUME, this.afterOverlay, this);
     // Phaser ne vide pas scene.events à l'arrêt : on retire l'écouteur pour ne pas l'empiler à chaque partie.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
-      this.events.off(Phaser.Scenes.Events.RESUME, this.afterChoice, this),
+      this.events.off(Phaser.Scenes.Events.RESUME, this.afterOverlay, this),
     );
+    this.freezeText = this.add
+      .text(GAME_WIDTH / 2, 76, '', textStyle(12, '#cfe8f0'))
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(95);
     this.input.keyboard?.on('keydown-M', () => toggleMute(this));
     pickaxeCursor(this);
 
@@ -114,8 +132,13 @@ export class GameScene extends Phaser.Scene {
     this.background.tilePositionY = cam.scrollY;
     this.syncRows();
     this.updateHover();
-    // Coups épuisés (fin déjà programmée) ou carte à choisir : l'écran ne bouge plus.
-    if (!this.started || this.ended || this.model.over || this.model.awaitingChoice) return;
+    // Sablier : compte à rebours, l'écran reste immobile.
+    this.frozenMs = Math.max(0, this.frozenMs - delta);
+    const frozen = this.frozenMs;
+    this.freezeText.setText(frozen > 0 ? `Temps figé ${(frozen / 1000).toFixed(1)} s` : '');
+    // Coups épuisés (fin déjà programmée), carte ou coffre à ouvrir, sablier : l'écran ne bouge plus.
+    const waiting = this.model.awaitingChoice || this.pendingChests.length > 0;
+    if (!this.started || this.ended || this.model.over || waiting || frozen > 0) return;
 
     const base = Math.min(SCROLL_SPEED_MAX, SCROLL_SPEED_BASE + this.model.depth * SCROLL_SPEED_PER_METER);
     const speed = base * this.model.mods.scroll;
@@ -197,31 +220,50 @@ export class GameScene extends Phaser.Scene {
     if (events.some((e) => e.type !== 'bump')) this.started = true;
     this.lastHitY = center(cell).y;
     this.swingPickaxe(pointer.worldX, pointer.worldY);
+    for (const event of events) if (event.type === 'chest') this.pendingChests.push(event.perks);
     this.play(events);
     this.emitState();
     this.checkLayer();
 
-    if (this.model.awaitingChoice) {
-      // Palier atteint : on laisse l'explosion se jouer un peu, puis on fige tout pour choisir.
-      this.time.delayedCall(450, () => this.openChoice());
+    if (this.model.awaitingChoice || this.pendingChests.length > 0) {
+      // Coffre ou palier : on laisse l'explosion se jouer un peu, puis on fige tout.
+      this.scheduleOverlay(450);
     } else if (this.model.over) {
       // On laisse les animations finir avant d'afficher le score.
       this.time.delayedCall(1100, () => this.end('picks'));
     }
   }
 
-  private openChoice(): void {
-    if (this.ended || !this.model.awaitingChoice || this.scene.isPaused()) return;
-    this.hover.setVisible(false);
-    this.scene.pause();
-    this.scene.launch('perk');
+  /** Met la partie en pause pour la roulette d'un coffre, sinon pour le choix de carte. */
+  /** Un seul minuteur à la fois : deux coffres rapprochés ne doivent pas ouvrir deux écrans. */
+  private scheduleOverlay(delay: number): void {
+    if (this.overlayOpen) return;
+    this.overlayTimer?.remove();
+    this.overlayTimer = this.time.delayedCall(delay, () => this.openOverlay());
   }
 
-  /** Retour de l'écran des cartes : on applique ce qui se voit, puis la partie reprend. */
-  private afterChoice(): void {
+  private openOverlay(): void {
+    // pause()/launch() ne prennent effet qu'au tick suivant : on se fie à notre propre drapeau.
+    if (this.ended || this.overlayOpen) return;
+    const chest = this.pendingChests.shift();
+    if (!chest && !this.model.awaitingChoice) return;
+    this.overlayOpen = true;
+    this.hover.setVisible(false);
+    this.scene.pause();
+    if (chest) this.scene.launch('chest', { perks: chest });
+    else this.scene.launch('perk');
+  }
+
+  /** Retour d'un écran par-dessus : on applique ce qui se voit, puis la suite (ou la reprise). */
+  private afterOverlay(): void {
+    this.overlayOpen = false;
     for (const [cell, fog] of this.fog) fog.setAlpha(this.fogAlpha(cell));
     this.emitState();
-    if (this.model.over) this.time.delayedCall(600, () => this.end('picks'));
+    if (this.pendingChests.length > 0 || this.model.awaitingChoice) {
+      this.scheduleOverlay(150);
+    } else if (this.model.over) {
+      this.time.delayedCall(600, () => this.end('picks'));
+    }
   }
 
   /** Bandeau au passage d'une couche à l'autre, et fond qui change de teinte. */
@@ -263,7 +305,8 @@ export class GameScene extends Phaser.Scene {
       const delay = origins.length
         ? Math.min(...origins.map((o) => o.delay + distance(event.cell, o.cell) * BLAST_STEP_MS))
         : 0;
-      if (event.type === 'explode') origins.push({ cell: event.cell, delay });
+      const blast = event.type === 'explode' || (event.type === 'special' && event.kind === 'magnet');
+      if (blast) origins.push({ cell: event.cell, delay });
       if (delay === 0) this.playEvent(event);
       else this.time.delayedCall(delay, () => this.playEvent(event));
     }
@@ -321,7 +364,7 @@ export class GameScene extends Phaser.Scene {
         break;
 
       case 'explode':
-        this.explosion(cell, event.targets);
+        this.explosion(cell, event.targets, event.style);
         block?.destroy();
         this.blocks.delete(cell);
         this.fog.get(cell)?.destroy();
@@ -331,6 +374,16 @@ export class GameScene extends Phaser.Scene {
       case 'gain':
         playSfx(this, 'bonus');
         floatingText(this, x, y - 10, event.picks > 0 ? `+${event.picks} coups` : 'gratuit', '#8cff6b');
+        break;
+
+      case 'special':
+        this.special(event.kind, x, y);
+        break;
+
+      case 'chest':
+        playSfx(this, 'bonus');
+        this.cameras.main.flash(200, 255, 216, 74);
+        floatingText(this, x, y - 10, `Coffre !`, '#ffd84a');
         break;
 
       case 'levelUp':
@@ -346,10 +399,32 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private explosion(cell: Cell, targets: Cell[]): void {
+  private special(kind: 'hourglass' | 'lamp' | 'magnet' | 'chicken', x: number, y: number): void {
+    playSfx(this, 'bonus');
+    switch (kind) {
+      case 'hourglass':
+        this.frozenMs += HOURGLASS_MS;
+        this.cameras.main.flash(300, 207, 232, 240);
+        break;
+      case 'lamp':
+        this.cameras.main.flash(300, 255, 246, 192);
+        floatingText(this, x, y - 10, 'Lumière !', '#fff6c0');
+        break;
+      case 'magnet': {
+        // Onde qui s'élargit : les minerais attirés cassent au passage (cf. délais dans play()).
+        const ring = this.add.circle(x, y, 20).setStrokeStyle(4, 0xd83b2b).setDepth(55);
+        this.tweens.add({ targets: ring, radius: 380, alpha: 0, duration: 700, onComplete: () => ring.destroy() });
+        break;
+      }
+      case 'chicken':
+        break; // le « +10 coups » arrive par l'événement gain
+    }
+  }
+
+  private explosion(cell: Cell, targets: Cell[], style: 'tnt' | 'dynamite'): void {
     const { x, y } = center(cell);
     playSfx(this, 'boom');
-    if (cell.kind === 'tnt') {
+    if (style === 'tnt') {
       this.add
         .sprite(x, y, 'tnt_boom')
         .setDepth(60)

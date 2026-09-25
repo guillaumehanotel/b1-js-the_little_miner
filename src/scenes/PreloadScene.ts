@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { GAME_WIDTH, VIEW_HEIGHT } from '../config';
-import { BLOCK_TYPES } from '../model/blockTypes';
+import { BLOCK_TYPES, type BlockKind, isSpecial } from '../model/blockTypes';
+import { makeSpecialBlockTextures } from '../fx/pixelArt';
 import { textStyle } from '../fx/effects';
 
 const IMG = 'assets/img/';
@@ -26,7 +27,8 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('ground', IMG + 'ground.png');
     this.load.image('pioche', IMG + 'pioche50x50.png');
     this.load.image('grass_block', IMG + 'grass_block.png');
-    for (const { texture } of Object.values(BLOCK_TYPES)) {
+    for (const [kind, { texture }] of Object.entries(BLOCK_TYPES) as [BlockKind, { texture: string }][]) {
+      if (isSpecial(kind)) continue; // dessinés en code dans create()
       const ext = texture === 'bedrock_block' || texture === 'bonus_block' ? 'png' : 'jpg';
       this.load.image(texture, `${IMG}${texture}.${ext}`);
     }
@@ -54,6 +56,7 @@ export class PreloadScene extends Phaser.Scene {
     // Carré blanc de 6 px pour les particules (teinté à l'usage).
     this.make.graphics({}, false).fillStyle(0xffffff).fillRect(0, 0, 6, 6).generateTexture('px', 6, 6).destroy();
     this.makeDangerGradient();
+    makeSpecialBlockTextures(this);
 
     this.scene.start('title');
   }

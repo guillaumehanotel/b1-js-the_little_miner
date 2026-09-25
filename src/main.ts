@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { GAME_WIDTH, VIEW_HEIGHT } from './config';
+import { ChestScene } from './scenes/ChestScene';
 import { GameOverScene } from './scenes/GameOverScene';
 import { GameScene } from './scenes/GameScene';
 import { HudScene } from './scenes/HudScene';
@@ -28,7 +29,7 @@ fontReady.finally(() => {
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     input: { activePointers: 2 },
-    scene: [PreloadScene, TitleScene, WorkshopScene, GameScene, HudScene, PerkScene, GameOverScene],
+    scene: [PreloadScene, TitleScene, WorkshopScene, GameScene, HudScene, PerkScene, ChestScene, GameOverScene],
   });
   // Accès depuis la console pour déboguer (dev uniquement).
   if (import.meta.env.DEV) Object.assign(window, { game });

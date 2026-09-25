@@ -47,4 +47,11 @@ export const storage = {
   set unlocked(ids: string[]) {
     write('unlocked', JSON.stringify(ids));
   },
+  /** Niveau d'une amélioration permanente de l'Atelier (0 si jamais achetée). */
+  upgrade(id: string): number {
+    return Math.max(0, Math.floor(Number(read(`upgrade:${id}`)) || 0));
+  },
+  setUpgrade(id: string, level: number): void {
+    write(`upgrade:${id}`, String(level));
+  },
 };

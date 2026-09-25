@@ -4,7 +4,7 @@ import { type BlockKind, randomKind } from '../src/model/blockTypes';
 import { MinerGame } from '../src/model/game';
 import { Grid } from '../src/model/grid';
 import { LAYERS, layerAt } from '../src/model/layers';
-import { PERKS, PERKS_BY_ID, type Perk, STARTER_PERK_IDS, drawPerks } from '../src/model/perks';
+import { MAX_SLOTS, PERKS, PERKS_BY_ID, type Perk, SNACK, STARTER_PERK_IDS, drawPerks } from '../src/model/perks';
 
 /** Mine de terre, avec quelques cases imposées : { 'col,row': kind }. */
 function gridWith(overrides: Record<string, BlockKind> = {}): Grid {
@@ -152,7 +152,7 @@ describe('paliers et cartes', () => {
     expect(g.offer).toHaveLength(3);
     expect(g.hit(0, 10)).toBeNull();
     const perk = g.choose(0)!;
-    expect(g.owned).toEqual([perk.id]);
+    expect(perk.instant ? {} : g.owned).toEqual(perk.instant ? {} : { [perk.id]: 1 });
     expect(g.awaitingChoice).toBe(false);
     expect(g.hit(0, 10)).not.toBeNull();
   });
@@ -167,8 +167,8 @@ describe('paliers et cartes', () => {
     expect(g.pendingChoices).toBe(2);
     g.choose(0);
     expect(g.offer).toHaveLength(3); // second tirage, tiré après le premier choix
-    g.choose(1);
-    expect(g.owned).toHaveLength(2);
+    expect(g.choose(1)).not.toBeNull();
+    expect(g.awaitingChoice).toBe(false);
   });
 
   it('à 0 coup, la partie continue tant qu\'une carte reste à choisir', () => {
@@ -183,13 +183,14 @@ describe('paliers et cartes', () => {
 
   it('les cartes de départ sont les 8 gratuites', () => {
     expect(STARTER_PERK_IDS).toHaveLength(8);
-    expect(PERKS).toHaveLength(16);
+    expect(PERKS.filter((p) => p.evolves)).toHaveLength(4);
   });
 
   it('le tirage ne repropose pas une carte unique déjà prise', () => {
     const pool = [PERKS_BY_ID.get('lantern')!, PERKS_BY_ID.get('second_wind')!];
     for (let i = 0; i < 20; i++) {
-      expect(drawPerks(pool, ['lantern'], Math.random).map((p) => p.id)).toEqual(['second_wind']);
+      const state = { owned: { lantern: 1 }, banned: new Set<string>() };
+      expect(drawPerks(pool, state, Math.random).map((p) => p.id)).toEqual(['second_wind']);
     }
   });
 
@@ -278,3 +279,190 @@ describe('paliers et cartes', () => {
     expect(g.gems).toBe(4);
   });
 });
+
+/** Donne directement une carte (comme si on l'avait choisie). */
+function give(g: MinerGame, id: string, times = 1): void {
+  for (let i = 0; i < times; i++) {
+    g.pendingChoices++;
+    (g as unknown as { currentOffer: Perk[] }).currentOffer = [PERKS_BY_ID.get(id)!];
+    g.choose(0);
+  }
+}
+
+describe('niveaux, emplacements, évolutions', () => {
+  it('reprendre une carte la monte de niveau, jusqu\'au max', () => {
+    const g = game();
+    give(g, 'iron_pick', 3);
+    expect(g.levelOf('iron_pick')).toBe(3);
+    expect(g.mods.power).toBe(4);
+    const offers = Array.from({ length: 30 }, () => drawPerks(PERKS, { owned: g.owned, banned: new Set() }, Math.random));
+    expect(offers.flat().some((p) => p.id === 'iron_pick')).toBe(false);
+  });
+
+  it('6 emplacements pleins : seules les montées de niveau sortent', () => {
+    const g = game();
+    for (const id of ['iron_pick', 'long_fuse', 'prospector', 'heavy_boots', 'deep_pockets', 'geologist']) give(g, id);
+    expect(Object.keys(g.owned)).toHaveLength(MAX_SLOTS);
+    for (let i = 0; i < 30; i++) {
+      for (const p of drawPerks(PERKS, { owned: g.owned, banned: new Set() }, Math.random)) {
+        expect(p.id in g.owned || p.instant).toBe(true);
+      }
+    }
+  });
+
+  it('les effets immédiats ne prennent pas d\'emplacement', () => {
+    const g = game();
+    give(g, 'second_wind');
+    expect(g.owned).toEqual({});
+    expect(g.picks).toBe(START_PICKS + 8);
+  });
+
+  it('tout au max : Casse-croûte', () => {
+    const state = { owned: { lantern: 1 }, banned: new Set<string>() };
+    expect(drawPerks([PERKS_BY_ID.get('lantern')!], state, Math.random)).toEqual([SNACK]);
+  });
+
+  it('une évolution prête sort à coup sûr et remplace sa base', () => {
+    const g = game();
+    give(g, 'long_fuse', 3);
+    give(g, 'artificer');
+    const offer = drawPerks(PERKS, { owned: g.owned, banned: new Set() }, Math.random);
+    expect(offer[0].id).toBe('carpet_bombing');
+    give(g, 'carpet_bombing');
+    expect(g.owned).toEqual({ artificer: 1, carpet_bombing: 1 });
+    expect(g.banned.has('long_fuse')).toBe(true); // la base ne ressort plus
+    expect(g.mods.tntRadius).toBe(5); // les niveaux de la Mèche longue restent acquis
+  });
+
+  it('pas d\'évolution sans la carte de base au niveau max', () => {
+    const offer = drawPerks(PERKS, { owned: { long_fuse: 2, artificer: 1 }, banned: new Set() }, Math.random);
+    expect(offer.some((p) => p.evolves)).toBe(false);
+  });
+
+  it('Tapis de bombes : la TNT provoque une réplique 3 lignes plus bas', () => {
+    const g = game({ '3,1': 'tnt' });
+    g.mods.aftershock = true;
+    g.hit(3, 0);
+    g.hit(3, 1);
+    expect(g.grid.get(3, 4)!.destroyed).toBe(true); // centre de la réplique
+    expect(g.grid.get(3, 6)!.destroyed).toBe(true); // son souffle
+  });
+
+  it('Foreuse : casser un bloc abîme celui du dessous', () => {
+    const g = game({ '0,1': 'stone' });
+    g.mods.drill = true;
+    g.hit(0, 0);
+    expect(g.grid.get(0, 1)!.hp).toBe(1);
+  });
+
+  it('Œil du mineur : casser éclaire 2 cases autour', () => {
+    const g = game();
+    g.mods.eye = true;
+    g.hit(3, 0);
+    expect(g.grid.get(3, 2)!.revealed).toBe(true);
+    expect(g.grid.get(4, 1)!.revealed).toBe(true);
+  });
+
+  it('Filon-mère : les minerais identiques collés partent ensemble', () => {
+    const g = game({ '0,1': 'gold', '1,1': 'gold', '1,2': 'gold', '2,1': 'iron' });
+    g.mods.motherlode = true;
+    g.mods.power = 3;
+    g.hit(0, 0);
+    g.hit(0, 1);
+    expect(g.ores.gold).toBe(3);
+    expect(g.grid.get(2, 1)!.destroyed).toBe(false);
+  });
+});
+
+describe('blocs spéciaux', () => {
+  it('Poulet : +10 coups', () => {
+    const g = game({ '0,1': 'chicken' });
+    g.hit(0, 0);
+    g.hit(0, 1);
+    expect(g.picks).toBe(START_PICKS - 2 + 10);
+  });
+
+  it('Sablier : émet un gel de l\'écran', () => {
+    const g = game({ '0,1': 'hourglass' });
+    g.hit(0, 0);
+    expect(g.hit(0, 1)!.some((e) => e.type === 'special' && e.kind === 'hourglass')).toBe(true);
+  });
+
+  it('Lampe : éclaire les 6 lignes du dessous', () => {
+    const g = game({ '0,1': 'lamp' });
+    g.hit(0, 0);
+    g.hit(0, 1);
+    expect(g.grid.rowCells(7).every((c) => c.revealed)).toBe(true);
+    expect(g.grid.rowCells(8).some((c) => c.revealed)).toBe(false);
+  });
+
+  it('Aimant : ramasse les minerais révélés, pas ceux cachés', () => {
+    const g = game({ '0,1': 'magnet', '6,0': 'coal', '5,1': 'diamond' });
+    g.hit(0, 0);
+    g.hit(0, 1);
+    expect(g.ores.coal).toBe(1); // ligne d'herbe : visible
+    expect(g.ores.diamond).toBe(0); // encore dans le noir
+  });
+
+  it('Coffre : 1, 3 ou 5 améliorations appliquées tout de suite', () => {
+    const counts = new Set<number>();
+    for (let i = 0; i < 200; i++) {
+      const g = game({ '0,1': 'chest' });
+      g.hit(0, 0);
+      const chest = g.hit(0, 1)!.find((e) => e.type === 'chest');
+      if (chest?.type !== 'chest') throw new Error('pas de coffre');
+      counts.add(chest.perks.length);
+      // Une évolution remplace sa base : elle compte pour 1 mais retire les niveaux de la base.
+      expect(Object.values(g.owned).every((level) => level >= 1)).toBe(true);
+      expect(Object.keys(g.owned).length).toBeLessThanOrEqual(MAX_SLOTS);
+      expect(Object.keys(g.owned).some((id) => g.banned.has(id))).toBe(false);
+    }
+    expect([...counts].sort()).toEqual([1, 3, 5]);
+  });
+
+  it('Coffre : donne l\'évolution prête en priorité', () => {
+    const g = game({ '0,1': 'chest' });
+    give(g, 'iron_pick', 3);
+    give(g, 'geologist');
+    g.hit(0, 0);
+    const chest = g.hit(0, 1)!.find((e) => e.type === 'chest');
+    expect(chest?.type === 'chest' && chest.perks[0].id).toBe('drill');
+  });
+});
+
+describe('relancer, passer, bannir', () => {
+  const atLevel = () => {
+    const g = game();
+    digDown(g, 0, 9);
+    return g;
+  };
+
+  it('relancer consomme un jeton et change le tirage', () => {
+    const g = atLevel();
+    const first = g.offer;
+    expect(g.reroll()).toBe(true);
+    expect(g.offer).not.toBe(first);
+    expect(g.reroll()).toBe(false); // 1 seul jeton
+  });
+
+  it('passer rend 3 coups et ferme le choix', () => {
+    const g = atLevel();
+    const picks = g.picks;
+    expect(g.skip()).toBe(true);
+    expect(g.picks).toBe(picks + 3);
+    expect(g.awaitingChoice).toBe(false);
+  });
+
+  it('une carte bannie ne ressort plus de la partie', () => {
+    const g = atLevel();
+    const banned = g.offer[0].id;
+    expect(g.banish(0)).toBe(true);
+    for (let i = 0; i < 30; i++) {
+      g.rerolls = 1;
+      g.reroll();
+      expect(g.offer.map((p) => p.id)).not.toContain(banned);
+    }
+    expect(g.banish(0)).toBe(false); // plus de jeton
+  });
+});
+

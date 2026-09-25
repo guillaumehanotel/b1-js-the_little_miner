@@ -82,8 +82,13 @@ export function pickaxeCursor(scene: Phaser.Scene): Phaser.GameObjects.Image | n
   return cursor;
 }
 
-const RARITY_COLOR: Record<PerkRarity, number> = { common: 0xc9a36b, rare: 0x5decf5, curse: 0xd05ae8 };
-const RARITY_TAG: Record<PerkRarity, string> = { common: '', rare: 'rare', curse: 'malédiction' };
+const RARITY_COLOR: Record<PerkRarity, number> = {
+  common: 0xc9a36b,
+  rare: 0x5decf5,
+  curse: 0xd05ae8,
+  evolution: 0xffd84a,
+};
+const RARITY_TAG: Record<PerkRarity, string> = { common: '', rare: 'rare', curse: 'malédiction', evolution: 'évolution' };
 
 /** Carte de pouvoir dessinée en code : cadre coloré selon la rareté, icône = texture de bloc. */
 export function perkCard(
@@ -91,7 +96,14 @@ export function perkCard(
   x: number,
   y: number,
   perk: Perk,
-  { width = 360, height = 104, dimmed = false, compact = false } = {},
+  {
+    width = 360,
+    height = 104,
+    dimmed = false,
+    compact = false,
+    /** Niveau à afficher en pastilles (0 = pas de pastilles). */
+    level = 0,
+  } = {},
 ): Phaser.GameObjects.Container {
   const color = RARITY_COLOR[perk.rarity];
   const iconSize = compact ? 34 : 48;
@@ -115,6 +127,18 @@ export function perkCard(
         .text(width / 2 - 8, -height / 2 + 8, tag, textStyle(compact ? 6 : 8, `#${color.toString(16).padStart(6, '0')}`))
         .setOrigin(1, 0),
     );
+  }
+  // Pastilles de niveau (★) en bas à droite : pleines jusqu'au niveau atteint.
+  if (level > 0 && perk.maxLevel > 1) {
+    for (let i = 0; i < perk.maxLevel; i++) {
+      const pip = scene.add
+        .rectangle(width / 2 - 14 - (perk.maxLevel - 1 - i) * 14, height / 2 - 14, 9, 9, color, i < level ? 1 : 0)
+        .setStrokeStyle(2, color);
+      card.add(pip);
+    }
+  }
+  if (perk.rarity === 'evolution') {
+    scene.tweens.add({ targets: bg, strokeAlpha: 0.4, duration: 450, yoyo: true, repeat: -1 });
   }
   if (dimmed) card.setAlpha(0.55);
   card.setSize(width, height);

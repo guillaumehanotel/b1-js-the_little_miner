@@ -1,6 +1,14 @@
 import { PERKS, type Perk } from './model/perks';
 import { storage } from './storage';
 
+export type TokenKind = 'reroll' | 'banish';
+
+/** Jetons en plus achetables à l'Atelier : 3 niveaux, prix croissants. */
+export const TOKEN_UPGRADES: Record<TokenKind, { name: string; costs: number[] }> = {
+  reroll: { name: 'Relance', costs: [4, 8, 12] },
+  banish: { name: 'Bannissement', costs: [4, 8, 12] },
+};
+
 /** Progression entre les parties : gemmes à dépenser et cartes débloquées à l'Atelier. */
 export const meta = {
   get gems(): number {
@@ -18,6 +26,24 @@ export const meta = {
   /** Les cartes qui peuvent sortir pendant une partie. */
   pool(): Perk[] {
     return PERKS.filter((p) => meta.isUnlocked(p));
+  },
+
+  /** Jetons de départ d'une partie : 1 + les améliorations achetées. */
+  tokens(kind: TokenKind): number {
+    return 1 + storage.upgrade(kind);
+  },
+
+  /** Prix du prochain niveau, ou null si déjà au maximum. */
+  tokenCost(kind: TokenKind): number | null {
+    return TOKEN_UPGRADES[kind].costs[storage.upgrade(kind)] ?? null;
+  },
+
+  buyToken(kind: TokenKind): boolean {
+    const cost = meta.tokenCost(kind);
+    if (cost === null || storage.gems < cost) return false;
+    storage.gems = storage.gems - cost;
+    storage.setUpgrade(kind, storage.upgrade(kind) + 1);
+    return true;
   },
 
   buy(perk: Perk): boolean {

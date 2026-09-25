@@ -5,12 +5,16 @@ export type BlockKind =
   | 'tnt'
   | 'dynamite'
   | 'bonus'
+  | SpecialKind
   | 'coal'
   | 'iron'
   | 'gold'
   | 'diamond';
 
 export type OreKind = 'coal' | 'iron' | 'gold' | 'diamond';
+
+/** Blocs à effet immédiat quand on les casse (textures dessinées en code, cf. fx/pixelArt.ts). */
+export type SpecialKind = 'chest' | 'hourglass' | 'lamp' | 'magnet' | 'chicken';
 
 export interface BlockType {
   texture: string;
@@ -29,6 +33,11 @@ export const BLOCK_TYPES: Record<BlockKind, BlockType> = {
   tnt: { texture: 'tnt_block', resistance: 1, weight: 10, color: 0xd83b2b },
   dynamite: { texture: 'dynamite_block', resistance: 1, weight: 10, color: 0xe0503a },
   bonus: { texture: 'bonus_block', resistance: 1, weight: 10, color: 0xffd84a },
+  chest: { texture: 'chest_block', resistance: 1, weight: 3, color: 0x9a5a24 },
+  hourglass: { texture: 'hourglass_block', resistance: 1, weight: 3, color: 0xcfe8f0 },
+  lamp: { texture: 'lamp_block', resistance: 1, weight: 3, color: 0xffcc33 },
+  magnet: { texture: 'magnet_block', resistance: 1, weight: 3, color: 0xd83b2b },
+  chicken: { texture: 'chicken_block', resistance: 1, weight: 3, color: 0xc8742c },
   coal: { texture: 'coal_block', resistance: 1, weight: 20, color: 0x2b2b2b },
   iron: { texture: 'iron_block', resistance: 2, weight: 15, color: 0xd8af93 },
   gold: { texture: 'gold_block', resistance: 3, weight: 15, color: 0xfcee4b },
@@ -42,6 +51,12 @@ export const ORE_KINDS = Object.keys(ORE_POINTS) as OreKind[];
 
 export function isOre(kind: BlockKind): kind is OreKind {
   return kind in ORE_POINTS;
+}
+
+export const SPECIAL_KINDS: SpecialKind[] = ['chest', 'hourglass', 'lamp', 'magnet', 'chicken'];
+
+export function isSpecial(kind: BlockKind): kind is SpecialKind {
+  return (SPECIAL_KINDS as BlockKind[]).includes(kind);
 }
 
 export function isExplosive(kind: BlockKind): kind is 'tnt' | 'dynamite' {

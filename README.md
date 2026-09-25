@@ -35,8 +35,26 @@ Tous les 10 m, le jeu se fige et propose **1 carte parmi 3** : pioche plus forte
 puissante, coups en plus, défilement ralenti… Certaines cartes sont des **malédictions** :
 un gros avantage contre un inconvénient.
 
+Chaque carte monte jusqu'à 3 niveaux, et on ne peut en porter que 6 : une fois les
+emplacements pleins, seules les cartes déjà prises peuvent monter. Sous les cartes :
+**Relancer** (nouveau tirage), **Passer** (+3 coups), **Bannir** (retire une carte pour la partie).
+
+**Évolutions** (à la Vampire Survivors) : une carte au niveau max + sa partenaire → une
+super-carte proposée à coup sûr, qui remplace la première.
+
+| Évolution | Recette |
+| --- | --- |
+| Tapis de bombes : chaque TNT déclenche une réplique 3 lignes plus bas | Mèche longue ★3 + Artificier |
+| Foreuse : casser un bloc abîme celui du dessous | Pioche de fer ★3 + Géologue |
+| Œil du mineur : casser éclaire 2 cases tout autour | Lanterne + Détecteur |
+| Filon-mère : casser un minerai casse ceux du même type collés | Prospecteur ★3 + Filon |
+
+**Blocs spéciaux** : Coffre (roulette de 1, 3 ou 5 améliorations), Sablier (écran figé 5 s),
+Lampe (éclaire 6 lignes), Aimant (ramasse les minerais visibles), Poulet (+10 coups).
+
 En fin de partie, on gagne des **gemmes** (1 par diamant + 1 tous les 20 m). À l'**Atelier**
-(depuis l'accueil), elles débloquent de nouvelles cartes qui pourront sortir dans les tirages.
+(depuis l'accueil), elles débloquent de nouvelles cartes qui pourront sortir dans les tirages, et des jetons
+de relance et de bannissement en plus.
 
 **Score** = profondeur en mètres + charbon × 2 + fer × 3 + or × 4 + diamant × 5.
 Le meilleur score, les gemmes et les cartes débloquées sont gardés dans le navigateur. Touche **M** pour couper le son.
