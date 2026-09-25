@@ -1,34 +1,23 @@
 {
   "name": "the-little-miner",
-  "version": "1.0.0",
-  "description": "A modern mining game",
-  "main": "src/index.js",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Creuse le plus profond possible avec 40 coups de pioche.",
+  "type": "module",
   "scripts": {
-    "start": "webpack serve --mode development",
-    "build": "webpack --mode production",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
-  "keywords": [
-    "game",
-    "phaser",
-    "mining"
-  ],
-  "author": "",
   "license": "MIT",
   "dependencies": {
-    "phaser": "^3.60.0"
+    "phaser": "^4.2.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.22.5",
-    "@babel/preset-env": "^7.22.5",
-    "babel-loader": "^9.1.2",
-    "copy-webpack-plugin": "^11.0.0",
-    "css-loader": "^6.8.1",
-    "file-loader": "^6.2.0",
-    "html-webpack-plugin": "^5.5.3",
-    "style-loader": "^3.3.3",
-    "webpack": "^5.88.0",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
   }
 }
