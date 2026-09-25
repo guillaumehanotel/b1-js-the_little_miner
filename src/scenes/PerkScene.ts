@@ -1,8 +1,9 @@
 import * as Phaser from 'phaser';
-import { GAME_WIDTH, LEVEL_EVERY_METERS, VIEW_HEIGHT } from '../config';
+import { GAME_WIDTH, VIEW_HEIGHT } from '../config';
 import { playSfx } from '../fx/audio';
-import { perkCard, pickaxeCursor, textStyle } from '../fx/effects';
-import { SKIP_PICKS } from '../model/game';
+import { buildStrip, perkCard, pickaxeCursor, textStyle } from '../fx/effects';
+import { MAX_SLOTS } from '../model/perks';
+import { SKIP_PICKS, levelMeters } from '../model/game';
 import type { GameScene } from './GameScene';
 
 /** Choix d'une carte parmi 3, par-dessus la partie mise en pause. */
@@ -27,13 +28,16 @@ export class PerkScene extends Phaser.Scene {
     const cx = GAME_WIDTH / 2;
 
     this.add.rectangle(0, 0, GAME_WIDTH, VIEW_HEIGHT, 0x000000, 0.72).setOrigin(0);
-    const meters = (model.level - model.pendingChoices + 1) * LEVEL_EVERY_METERS;
-    this.title = this.add.text(cx, 110, `${meters} m`, textStyle(28, '#ffd84a')).setOrigin(0.5);
+    const meters = levelMeters(model.level - model.pendingChoices + 1);
+    this.title = this.add.text(cx, 66, `${meters} m`, textStyle(28, '#ffd84a')).setOrigin(0.5);
+    // Rappel de ce qu'on possède déjà, pour choisir en connaissance de cause.
+    const stripWidth = MAX_SLOTS * 38 - 12;
+    buildStrip(this, (GAME_WIDTH - stripWidth) / 2, 118, model.owned);
 
     this.cards = model.offer.map((perk, i) => {
-      const y = 216 + i * 120;
-      const level = perk.instant ? 0 : model.levelOf(perk.id) + 1;
-      const card = perkCard(this, cx, y, perk, { level });
+      const y = 216 + i * 126;
+      const from = perk.instant ? undefined : model.levelOf(perk.id);
+      const card = perkCard(this, cx, y, perk, { level: (from ?? -1) + 1, from });
       card.setInteractive({ useHandCursor: false });
       card.on('pointerover', () => this.tweens.add({ targets: card, scale: 1.04, duration: 100 }));
       card.on('pointerout', () => this.tweens.add({ targets: card, scale: 1, duration: 100 }));

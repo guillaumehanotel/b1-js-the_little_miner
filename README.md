@@ -24,14 +24,18 @@ descend tout seul : si ton dernier coup sort par le haut de l'écran, c'est perd
 | TNT | 1 | souffle tout dans un rayon de 2 blocs |
 | Dynamite | 1 | souffle toute la ligne |
 
-Les explosions déclenchent les autres explosifs qu'elles touchent.
+Les explosions déclenchent les autres explosifs qu'elles touchent. On ne frappe que les blocs
+**accessibles** (collés à un trou) : un bloc éclairé par une explosion ou une Lampe se voit,
+mais il faut creuser jusqu'à lui.
 
 ### Mine sans fond et cartes
 
 La mine traverse 4 couches de plus en plus riches (et de plus en plus barrées de bedrock) :
 Terre, Roche (15 m), Caverne (40 m), Magma (80 m).
 
-Tous les 10 m, le jeu se fige et propose **1 carte parmi 3** : pioche plus forte, TNT plus
+À chaque palier, le jeu se fige et propose **1 carte parmi 3**. Les paliers s'espacent au fil
+de la partie (10, 25, 45, 70, 100 m…) ; la barre bleue sous le tableau de bord montre la
+progression vers le prochain. Au choix : pioche plus forte, TNT plus
 puissante, coups en plus, défilement ralenti… Certaines cartes sont des **malédictions** :
 un gros avantage contre un inconvénient.
 

@@ -1,4 +1,4 @@
-import { COLS, LEVEL_EVERY_METERS, START_PICKS } from '../config';
+import { COLS, LEVEL_FIRST_GAP, LEVEL_GAP_GROWTH, START_PICKS } from '../config';
 import {
   type BlockKind,
   ORE_POINTS,
@@ -22,6 +22,11 @@ import {
   eligiblePerks,
   evolutionReady,
 } from './perks';
+
+/** Profondeur (en mètres) du palier n : 10, 25, 45, 70, 100… (0 pour n = 0). */
+export function levelMeters(n: number): number {
+  return n * LEVEL_FIRST_GAP + (LEVEL_GAP_GROWTH * n * (n - 1)) / 2;
+}
 
 /** Effets des blocs spéciaux. */
 export const HOURGLASS_MS = 5000;
@@ -124,8 +129,18 @@ export class MinerGame {
     return this.ores.diamond + Math.floor(this.depth / 20);
   }
 
+  /**
+   * On ne frappe que ce qu'on peut atteindre : un bloc qui touche un trou (ou la ligne d'herbe).
+   * Voir un bloc (Lampe, explosion, Lanterne…) ne suffit pas à y accéder.
+   */
+  isReachable(cell: Cell): boolean {
+    return cell.row === 0 || this.grid.neighbours(cell).some((n) => n.destroyed);
+  }
+
   canHit(cell: Cell): boolean {
-    return this.picks > 0 && !this.awaitingChoice && cell.revealed && !cell.destroyed;
+    return (
+      this.picks > 0 && !this.awaitingChoice && cell.revealed && !cell.destroyed && this.isReachable(cell)
+    );
   }
 
   /** Un coup de pioche du joueur. Renvoie null si la case n'est pas frappable. */
@@ -366,10 +381,9 @@ export class MinerGame {
     }
   }
 
-  /** Un tirage de cartes par palier de 10 m franchi (plusieurs d'un coup après une grosse explosion). */
+  /** Un tirage de cartes par palier franchi (plusieurs d'un coup après une grosse explosion). */
   private checkLevel(cell: Cell, events: GameEvent[]): void {
-    const reached = Math.floor(this.depth / LEVEL_EVERY_METERS);
-    while (this.level < reached) {
+    while (this.depth >= levelMeters(this.level + 1)) {
       this.level++;
       this.pendingChoices++;
       events.push({ type: 'levelUp', cell, level: this.level });

@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { BLOCK_TYPES, type BlockKind } from '../model/blockTypes';
-import type { Perk, PerkRarity } from '../model/perks';
+import { MAX_SLOTS, PERKS, PERKS_BY_ID, type Perk, type PerkRarity } from '../model/perks';
 
 export const FONT = '"Press Start 2P", monospace';
 
@@ -91,6 +91,27 @@ const RARITY_COLOR: Record<PerkRarity, number> = {
 const RARITY_TAG: Record<PerkRarity, string> = { common: '', rare: 'rare', curse: 'malédiction', evolution: 'évolution' };
 
 /** Carte de pouvoir dessinée en code : cadre coloré selon la rareté, icône = texture de bloc. */
+/** Évolution dont cette carte fait partie, et la carte qu'il faut en plus. */
+function evolutionHint(perk: Perk): string | null {
+  for (const evo of PERKS) {
+    if (!evo.evolves) continue;
+    const { from, with: partner } = evo.evolves;
+    if (perk.id === from) return `Évolue avec ${PERKS_BY_ID.get(partner)?.name}`;
+    if (perk.id === partner) return `Évolue avec ${PERKS_BY_ID.get(from)?.name} max`;
+  }
+  return null;
+}
+
+/** Libellé de niveau : « Nouveau », « Niv. 1 > 2 », « Niv. 2 > MAX », ou le niveau obtenu. */
+function levelLabel(perk: Perk, level: number, from?: number): { text: string; color: string } | null {
+  if (perk.evolves) return { text: `Remplace ${PERKS_BY_ID.get(perk.evolves.from)?.name}`, color: '#ffd84a' };
+  if (perk.instant || level <= 0) return null;
+  const show = (n: number) => (n >= perk.maxLevel && perk.maxLevel > 1 ? 'MAX' : String(n));
+  if (from === 0) return { text: 'Nouveau', color: '#8cff6b' };
+  if (from !== undefined) return { text: `Niv. ${from} > ${show(level)}`, color: '#ffd84a' };
+  return { text: perk.maxLevel > 1 ? `Niv. ${show(level)}` : '', color: '#ffd84a' };
+}
+
 export function perkCard(
   scene: Phaser.Scene,
   x: number,
@@ -98,11 +119,13 @@ export function perkCard(
   perk: Perk,
   {
     width = 360,
-    height = 104,
+    height = 116,
     dimmed = false,
     compact = false,
-    /** Niveau à afficher en pastilles (0 = pas de pastilles). */
+    /** Niveau affiché (après avoir pris la carte) ; 0 = pas d'indication de niveau. */
     level = 0,
+    /** Niveau avant de la prendre (écran de choix) : affiche « Nouveau » ou « Niv. 1 > 2 ». */
+    from = undefined as number | undefined,
   } = {},
 ): Phaser.GameObjects.Container {
   const color = RARITY_COLOR[perk.rarity];
@@ -128,19 +151,79 @@ export function perkCard(
         .setOrigin(1, 0),
     );
   }
-  // Pastilles de niveau (★) en bas à droite : pleines jusqu'au niveau atteint.
-  if (level > 0 && perk.maxLevel > 1) {
+
+  // Niveau : pastilles (pleines jusqu'au niveau, la nouvelle clignote) + libellé en clair.
+  const bottom = height / 2 - (compact ? 10 : 14);
+  if (level > 0 && perk.maxLevel > 1 && !perk.instant) {
     for (let i = 0; i < perk.maxLevel; i++) {
       const pip = scene.add
-        .rectangle(width / 2 - 14 - (perk.maxLevel - 1 - i) * 14, height / 2 - 14, 9, 9, color, i < level ? 1 : 0)
+        .rectangle(width / 2 - 14 - (perk.maxLevel - 1 - i) * 14, bottom, 9, 9, color, i < level ? 1 : 0)
         .setStrokeStyle(2, color);
       card.add(pip);
+      if (from !== undefined && i === level - 1) {
+        scene.tweens.add({ targets: pip, alpha: 0.2, duration: 350, yoyo: true, repeat: -1 });
+      }
     }
   }
+  const label = levelLabel(perk, level, from);
+  if (label?.text) {
+    const pipsWidth = perk.maxLevel > 1 ? perk.maxLevel * 14 + 8 : 0;
+    card.add(
+      scene.add
+        .text(width / 2 - 8 - pipsWidth, bottom, label.text, textStyle(compact ? 7 : 8, label.color))
+        .setOrigin(1, 0.5),
+    );
+  }
+  // Recette d'évolution (écran de choix uniquement) : pour apprendre les combinaisons en jouant.
+  const hint = compact ? null : evolutionHint(perk);
+  if (hint) card.add(scene.add.text(left, bottom - 18, hint, textStyle(7, '#ffd84a')).setOrigin(0, 0.5).setAlpha(0.8));
+
   if (perk.rarity === 'evolution') {
     scene.tweens.add({ targets: bg, strokeAlpha: 0.4, duration: 450, yoyo: true, repeat: -1 });
   }
   if (dimmed) card.setAlpha(0.55);
   card.setSize(width, height);
   return card;
+}
+
+/**
+ * Les cartes possédées, en rangée : icône, cadre de la couleur de la rareté, pastilles de niveau
+ * dessous, et les emplacements encore libres en pointillé pour voir la limite de 6.
+ */
+export function buildStrip(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  owned: Record<string, number>,
+  size = 26,
+): Phaser.GameObjects.Container {
+  const strip = scene.add.container(x, y);
+  const step = size + 12;
+  const entries = Object.entries(owned);
+  for (let slot = 0; slot < MAX_SLOTS; slot++) {
+    const cx = slot * step + size / 2;
+    const entry = entries[slot];
+    const perk = entry && PERKS_BY_ID.get(entry[0]);
+    if (!perk) {
+      strip.add(scene.add.rectangle(cx, 0, size, size, 0x000000, 0.35).setStrokeStyle(1, 0x6b5a44, 0.8));
+      continue;
+    }
+    const level = entry[1];
+    const color = RARITY_COLOR[perk.rarity];
+    strip.add(scene.add.rectangle(cx, 0, size, size, 0x1f1610, 0.9).setStrokeStyle(2, color));
+    const icon = scene.add.image(cx, 0, perk.icon, 0);
+    icon.setScale((size - 6) / Math.max(icon.width, icon.height));
+    strip.add(icon);
+    const max = perk.maxLevel;
+    const full = level >= max;
+    for (let i = 0; i < max; i++) {
+      const px = cx + (i - (max - 1) / 2) * 7;
+      strip.add(
+        scene.add
+          .rectangle(px, size / 2 + 5, 5, 5, full ? 0xffd84a : color, i < level ? 1 : 0)
+          .setStrokeStyle(1, full ? 0xffd84a : color),
+      );
+    }
+  }
+  return strip;
 }

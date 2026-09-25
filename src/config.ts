@@ -13,8 +13,12 @@ export const BONUS_PICKS = 5;
 /** Rayon (distance de Manhattan) de la zone détruite par la TNT ; elle éclaire un cran plus loin. */
 export const TNT_BLAST_RADIUS = 2;
 
-/** Un choix de carte tous les N mètres. */
-export const LEVEL_EVERY_METERS = 10;
+/**
+ * Paliers de cartes de plus en plus espacés (comme l'expérience dans Vampire Survivors) :
+ * 10 m pour le premier, puis 5 m de plus à chaque fois → 10, 25, 45, 70, 100 m…
+ */
+export const LEVEL_FIRST_GAP = 10;
+export const LEVEL_GAP_GROWTH = 5;
 
 /** Défilement automatique, en pixels par seconde (l'original faisait 1 px/frame ≈ 60 px/s). */
 export const SCROLL_SPEED_BASE = 55;

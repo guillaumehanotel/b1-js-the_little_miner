@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COLS, START_PICKS } from '../src/config';
 import { type BlockKind, randomKind } from '../src/model/blockTypes';
-import { MinerGame } from '../src/model/game';
+import { MinerGame, levelMeters } from '../src/model/game';
 import { Grid } from '../src/model/grid';
 import { LAYERS, layerAt } from '../src/model/layers';
 import { MAX_SLOTS, PERKS, PERKS_BY_ID, type Perk, SNACK, STARTER_PERK_IDS, drawPerks } from '../src/model/perks';
@@ -63,6 +63,15 @@ describe('génération', () => {
 });
 
 describe('coups de pioche', () => {
+  it('refuse un bloc visible mais pas accessible', () => {
+    const g = game({ '0,1': 'lamp' });
+    g.hit(0, 0);
+    g.hit(0, 1); // la Lampe éclaire 6 lignes plus bas
+    expect(g.grid.get(5, 5)!.revealed).toBe(true);
+    expect(g.hit(5, 5)).toBeNull();
+    expect(g.hit(0, 2)).not.toBeNull(); // collé au trou : accessible
+  });
+
   it('refuse une case cachée', () => {
     const g = game();
     expect(g.hit(0, 1)).toBeNull();
@@ -144,6 +153,16 @@ describe('explosifs', () => {
 });
 
 describe('paliers et cartes', () => {
+  it('les paliers s\'espacent : 10, 25, 45, 70, 100 m', () => {
+    expect([1, 2, 3, 4, 5].map(levelMeters)).toEqual([10, 25, 45, 70, 100]);
+    const g = game();
+    digDown(g, 0, 9);
+    g.choose(0);
+    digDown(g, 1, 23);
+    expect(g.depth).toBe(24);
+    expect(g.awaitingChoice).toBe(false);
+  });
+
   it('propose 3 cartes à 10 m et bloque la pioche en attendant', () => {
     const g = game();
     digDown(g, 0, 9);
@@ -158,12 +177,12 @@ describe('paliers et cartes', () => {
   });
 
   it('une explosion qui franchit deux paliers donne deux choix', () => {
-    // Dynamite en ligne 8 → TNT en colonne 3 tous les 2 rangs : la chaîne descend jusqu'à 21 m.
-    const chain = Object.fromEntries([8, 10, 12, 14, 16, 18].map((row) => [`3,${row}`, 'tnt' as BlockKind]));
+    // Dynamite en ligne 8 → TNT en colonne 3 tous les 2 rangs : la chaîne descend jusqu'à 25 m.
+    const chain = Object.fromEntries([8, 10, 12, 14, 16, 18, 20, 22].map((row) => [`3,${row}`, 'tnt' as BlockKind]));
     const g = game({ '0,8': 'dynamite', ...chain });
     digDown(g, 0, 7);
     g.hit(0, 8);
-    expect(g.depth).toBe(21);
+    expect(g.depth).toBe(25); // paliers à 10 et 25 m
     expect(g.pendingChoices).toBe(2);
     g.choose(0);
     expect(g.offer).toHaveLength(3); // second tirage, tiré après le premier choix

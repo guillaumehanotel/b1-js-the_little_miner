@@ -69,6 +69,7 @@ export class GameScene extends Phaser.Scene {
   private overlayOpen = false;
   private overlayTimer?: Phaser.Time.TimerEvent;
   private freezeText!: Phaser.GameObjects.Text;
+  private freezeFrame!: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super('game');
@@ -115,8 +116,15 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
       this.events.off(Phaser.Scenes.Events.RESUME, this.afterOverlay, this),
     );
+    // Sablier : cadre bleu glacé autour de l'écran + compte à rebours bien visible.
+    this.freezeFrame = this.add
+      .rectangle(GAME_WIDTH / 2, VIEW_HEIGHT / 2, GAME_WIDTH - 8, VIEW_HEIGHT - 8)
+      .setStrokeStyle(8, 0x9fdcf0, 0.8)
+      .setScrollFactor(0)
+      .setDepth(94)
+      .setVisible(false);
     this.freezeText = this.add
-      .text(GAME_WIDTH / 2, 76, '', textStyle(12, '#cfe8f0'))
+      .text(GAME_WIDTH / 2, 124, '', textStyle(16, '#cfe8f0'))
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(95);
@@ -135,9 +143,12 @@ export class GameScene extends Phaser.Scene {
     // Sablier : compte à rebours, l'écran reste immobile.
     this.frozenMs = Math.max(0, this.frozenMs - delta);
     const frozen = this.frozenMs;
-    this.freezeText.setText(frozen > 0 ? `Temps figé ${(frozen / 1000).toFixed(1)} s` : '');
+    this.freezeText.setText(frozen > 0 ? `Temps figé ${Math.ceil(frozen / 1000)} s` : '');
+    this.freezeFrame.setVisible(frozen > 0);
     // Coups épuisés (fin déjà programmée), carte ou coffre à ouvrir, sablier : l'écran ne bouge plus.
     const waiting = this.model.awaitingChoice || this.pendingChests.length > 0;
+    // Filet de sécurité : un coffre ou une carte en attente finit toujours par s'ouvrir.
+    if (waiting && !this.ended) this.scheduleOverlay(450);
     if (!this.started || this.ended || this.model.over || waiting || frozen > 0) return;
 
     const base = Math.min(SCROLL_SPEED_MAX, SCROLL_SPEED_BASE + this.model.depth * SCROLL_SPEED_PER_METER);
@@ -237,8 +248,9 @@ export class GameScene extends Phaser.Scene {
   /** Met la partie en pause pour la roulette d'un coffre, sinon pour le choix de carte. */
   /** Un seul minuteur à la fois : deux coffres rapprochés ne doivent pas ouvrir deux écrans. */
   private scheduleOverlay(delay: number): void {
-    if (this.overlayOpen) return;
-    this.overlayTimer?.remove();
+    // Déjà ouvert, ou déjà programmé : surtout ne pas repousser le minuteur. Avant, chaque coup
+    // pendant l'attente le relançait à zéro, et en tapant vite l'écran restait figé indéfiniment.
+    if (this.overlayOpen || (this.overlayTimer && !this.overlayTimer.hasDispatched)) return;
     this.overlayTimer = this.time.delayedCall(delay, () => this.openOverlay());
   }
 
@@ -249,6 +261,8 @@ export class GameScene extends Phaser.Scene {
     if (!chest && !this.model.awaitingChoice) return;
     this.overlayOpen = true;
     this.hover.setVisible(false);
+    // Le tableau de bord passerait par-dessus le voile de l'écran de choix : on le masque le temps du choix.
+    this.scene.setVisible(false, 'hud');
     this.scene.pause();
     if (chest) this.scene.launch('chest', { perks: chest });
     else this.scene.launch('perk');
@@ -257,6 +271,7 @@ export class GameScene extends Phaser.Scene {
   /** Retour d'un écran par-dessus : on applique ce qui se voit, puis la suite (ou la reprise). */
   private afterOverlay(): void {
     this.overlayOpen = false;
+    this.scene.setVisible(true, 'hud');
     for (const [cell, fog] of this.fog) fog.setAlpha(this.fogAlpha(cell));
     this.emitState();
     if (this.pendingChests.length > 0 || this.model.awaitingChoice) {

@@ -38,7 +38,7 @@ export class TitleScene extends Phaser.Scene {
     workshop.on('pointerdown', () => this.scene.start('workshop'));
     this.input.keyboard?.once('keydown-A', () => this.scene.start('workshop'));
     this.add
-      .text(GAME_WIDTH / 2, 550, '40 coups de pioche.\nUne carte tous les 10 m.', {
+      .text(GAME_WIDTH / 2, 550, '40 coups de pioche.\nUne carte à chaque palier.', {
         ...textStyle(10, '#e8d5b0'),
         align: 'center',
         lineSpacing: 8,

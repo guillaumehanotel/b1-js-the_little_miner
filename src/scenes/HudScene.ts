@@ -1,8 +1,7 @@
 import * as Phaser from 'phaser';
 import { GAME_WIDTH } from '../config';
-import { textStyle } from '../fx/effects';
-import type { MinerGame } from '../model/game';
-import { PERKS_BY_ID } from '../model/perks';
+import { buildStrip, textStyle } from '../fx/effects';
+import { type MinerGame, levelMeters } from '../model/game';
 
 /** Tableau de bord, dans sa propre scène pour ne pas trembler avec la caméra du jeu. */
 export class HudScene extends Phaser.Scene {
@@ -11,8 +10,10 @@ export class HudScene extends Phaser.Scene {
   private score!: Phaser.GameObjects.Text;
   private lastPicks = -1;
   private warning?: Phaser.Tweens.Tween;
-  private perkIcons!: Phaser.GameObjects.Container;
+  private perkStrip?: Phaser.GameObjects.Container;
   private perksKey = '';
+  private levelBar!: Phaser.GameObjects.Rectangle;
+  private nextLevel!: Phaser.GameObjects.Text;
 
   constructor() {
     super('hud');
@@ -27,7 +28,11 @@ export class HudScene extends Phaser.Scene {
     this.picks = this.add.text(44, 22, '', textStyle(16)).setOrigin(0, 0.5);
     this.score = this.add.text(GAME_WIDTH / 2 + 20, 22, '', textStyle(12, '#ffd84a')).setOrigin(0.5);
     this.depth = this.add.text(GAME_WIDTH - 12, 22, '', textStyle(16)).setOrigin(1, 0.5);
-    this.perkIcons = this.add.container(0, 56);
+    this.perkStrip = undefined;
+    // Barre de progression vers la prochaine carte (la barre d'expérience de Vampire Survivors).
+    this.add.rectangle(0, 44, GAME_WIDTH, 5, 0x000000, 0.6).setOrigin(0);
+    this.levelBar = this.add.rectangle(0, 44, 0, 5, 0x5decf5).setOrigin(0);
+    this.nextLevel = this.add.text(GAME_WIDTH - 8, 58, '', textStyle(8, '#5decf5')).setOrigin(1, 0.5);
 
     const game = this.scene.get('game');
     game.events.on('state', this.refresh, this);
@@ -39,6 +44,11 @@ export class HudScene extends Phaser.Scene {
     this.picks.setText(String(model.picks));
     this.depth.setText(`${model.depth} m`);
     this.score.setText(`${model.score} pts`);
+    const from = levelMeters(model.level);
+    const to = levelMeters(model.level + 1);
+    const progress = Phaser.Math.Clamp((model.depth - from) / (to - from), 0, 1);
+    this.tweens.add({ targets: this.levelBar, width: GAME_WIDTH * progress, duration: 250 });
+    this.nextLevel.setText(`carte à ${to} m`);
 
     if (this.lastPicks >= 0 && model.picks > this.lastPicks) {
       this.tweens.add({ targets: this.picks, scale: 1.6, duration: 140, yoyo: true, ease: 'Back.easeOut' });
@@ -57,24 +67,12 @@ export class HudScene extends Phaser.Scene {
     }
   }
 
-  /** Petites icônes des cartes prises, sous la barre, avec leur niveau. */
+  /** Cartes possédées sous la barre, avec niveau et emplacements libres. */
   private refreshPerks(owned: Record<string, number>): void {
     const key = JSON.stringify(owned);
     if (key === this.perksKey) return;
     this.perksKey = key;
-    this.perkIcons.removeAll(true);
-    Object.entries(owned).forEach(([id, level], i) => {
-      const perk = PERKS_BY_ID.get(id);
-      if (!perk) return;
-      const x = 18 + i * 30;
-      const icon = this.add.image(x, 0, perk.icon, 0);
-      icon.setScale(22 / Math.max(icon.width, icon.height));
-      this.perkIcons.add(icon);
-      if (perk.maxLevel > 1) {
-        const color = level === perk.maxLevel ? '#ffd84a' : '#ffffff';
-        this.perkIcons.add(this.add.text(x + 10, 8, String(level), textStyle(8, color)).setOrigin(0.5));
-      }
-      if (perk.rarity === 'evolution') this.perkIcons.add(this.add.rectangle(x, 0, 26, 26).setStrokeStyle(2, 0xffd84a));
-    });
+    this.perkStrip?.destroy();
+    this.perkStrip = buildStrip(this, 8, 72, owned, 24);
   }
 }
