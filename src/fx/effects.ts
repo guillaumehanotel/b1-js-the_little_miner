@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { BLOCK_TYPES, type BlockKind } from '../model/blockTypes';
+import type { Perk, PerkRarity } from '../model/perks';
 
 export const FONT = '"Press Start 2P", monospace';
 
@@ -79,4 +80,43 @@ export function pickaxeCursor(scene: Phaser.Scene): Phaser.GameObjects.Image | n
   // Phaser ne vide pas scene.events à l'arrêt : sans ça, chaque partie ajouterait un écouteur.
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, follow));
   return cursor;
+}
+
+const RARITY_COLOR: Record<PerkRarity, number> = { common: 0xc9a36b, rare: 0x5decf5, curse: 0xd05ae8 };
+const RARITY_TAG: Record<PerkRarity, string> = { common: '', rare: 'rare', curse: 'malédiction' };
+
+/** Carte de pouvoir dessinée en code : cadre coloré selon la rareté, icône = texture de bloc. */
+export function perkCard(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  perk: Perk,
+  { width = 360, height = 104, dimmed = false, compact = false } = {},
+): Phaser.GameObjects.Container {
+  const color = RARITY_COLOR[perk.rarity];
+  const iconSize = compact ? 34 : 48;
+  const left = -width / 2 + (compact ? 58 : 82);
+  const card = scene.add.container(x, y);
+  const bg = scene.add
+    .rectangle(0, 0, width, height, 0x1f1610, 0.95)
+    .setStrokeStyle(3, color, dimmed ? 0.35 : 1);
+  const icon = scene.add.image(-width / 2 + (compact ? 28 : 42), 0, perk.icon, 0);
+  icon.setScale(iconSize / Math.max(icon.width, icon.height));
+  const name = scene.add.text(left, compact ? -20 : -height / 2 + 16, perk.name, textStyle(compact ? 10 : 12));
+  const text = scene.add.text(left, compact ? 0 : -height / 2 + 40, perk.text, {
+    ...textStyle(compact ? 7 : 8, '#e8d5b0'),
+    lineSpacing: compact ? 3 : 6,
+  });
+  card.add([bg, icon, name, text]);
+  const tag = RARITY_TAG[perk.rarity];
+  if (tag) {
+    card.add(
+      scene.add
+        .text(width / 2 - 8, -height / 2 + 8, tag, textStyle(compact ? 6 : 8, `#${color.toString(16).padStart(6, '0')}`))
+        .setOrigin(1, 0),
+    );
+  }
+  if (dimmed) card.setAlpha(0.55);
+  card.setSize(width, height);
+  return card;
 }

@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { GAME_WIDTH } from '../config';
 import { textStyle } from '../fx/effects';
 import type { MinerGame } from '../model/game';
+import { PERKS_BY_ID } from '../model/perks';
 
 /** Tableau de bord, dans sa propre scène pour ne pas trembler avec la caméra du jeu. */
 export class HudScene extends Phaser.Scene {
@@ -10,6 +11,7 @@ export class HudScene extends Phaser.Scene {
   private score!: Phaser.GameObjects.Text;
   private lastPicks = -1;
   private warning?: Phaser.Tweens.Tween;
+  private perkIcons!: Phaser.GameObjects.Container;
 
   constructor() {
     super('hud');
@@ -23,6 +25,7 @@ export class HudScene extends Phaser.Scene {
     this.picks = this.add.text(44, 22, '', textStyle(16)).setOrigin(0, 0.5);
     this.score = this.add.text(GAME_WIDTH / 2 + 20, 22, '', textStyle(12, '#ffd84a')).setOrigin(0.5);
     this.depth = this.add.text(GAME_WIDTH - 12, 22, '', textStyle(16)).setOrigin(1, 0.5);
+    this.perkIcons = this.add.container(0, 56);
 
     const game = this.scene.get('game');
     game.events.on('state', this.refresh, this);
@@ -39,6 +42,7 @@ export class HudScene extends Phaser.Scene {
       this.tweens.add({ targets: this.picks, scale: 1.6, duration: 140, yoyo: true, ease: 'Back.easeOut' });
     }
     this.lastPicks = model.picks;
+    this.refreshPerks(model.owned);
 
     const low = model.picks <= 10;
     this.picks.setColor(low ? '#ff5a4a' : '#ffffff');
@@ -49,5 +53,18 @@ export class HudScene extends Phaser.Scene {
       this.warning = undefined;
       this.picks.setAlpha(1);
     }
+  }
+
+  /** Petites icônes des cartes prises, sous la barre. */
+  private refreshPerks(owned: string[]): void {
+    if (this.perkIcons.length === owned.length) return;
+    this.perkIcons.removeAll(true);
+    owned.forEach((id, i) => {
+      const perk = PERKS_BY_ID.get(id);
+      if (!perk) return;
+      const icon = this.add.image(16 + i * 24, 0, perk.icon, 0);
+      icon.setScale(20 / Math.max(icon.width, icon.height));
+      this.perkIcons.add(icon);
+    });
   }
 }

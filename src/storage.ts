@@ -30,4 +30,21 @@ export const storage = {
   set muted(value: boolean) {
     write('muted', value ? '1' : '0');
   },
+  get gems(): number {
+    return Number(read('gems')) || 0;
+  },
+  set gems(value: number) {
+    write('gems', String(value));
+  },
+  get unlocked(): string[] {
+    try {
+      const list: unknown = JSON.parse(read('unlocked') ?? '[]');
+      return Array.isArray(list) ? list.filter((id) => typeof id === 'string') : [];
+    } catch {
+      return [];
+    }
+  },
+  set unlocked(ids: string[]) {
+    write('unlocked', JSON.stringify(ids));
+  },
 };

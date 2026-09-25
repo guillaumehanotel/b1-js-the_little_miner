@@ -7,13 +7,15 @@ import {
   SCROLL_SPEED_BASE,
   SCROLL_SPEED_MAX,
   SCROLL_SPEED_PER_METER,
-  WORLD_HEIGHT,
+  VIEW_HEIGHT,
 } from '../config';
 import { playSfx, toggleMute } from '../fx/audio';
-import { Debris, floatingText, pickaxeCursor } from '../fx/effects';
-import { BLOCK_TYPES } from '../model/blockTypes';
+import { Debris, floatingText, pickaxeCursor, textStyle } from '../fx/effects';
+import { meta } from '../meta';
+import { BLOCK_TYPES, isOre } from '../model/blockTypes';
 import { type GameEvent, MinerGame } from '../model/game';
 import type { Cell } from '../model/grid';
+import { type Layer, layerAt } from '../model/layers';
 import { storage } from '../storage';
 
 export type EndReason = 'picks' | 'scroll';
@@ -22,25 +24,35 @@ export interface GameOverData {
   score: number;
   depth: number;
   ores: MinerGame['ores'];
+  orePoints: MinerGame['orePoints'];
   best: number;
   record: boolean;
   reason: EndReason;
+  gems: number;
 }
 
 /** Délai entre deux cases touchées par une même explosion (effet d'onde). */
 const BLAST_STEP_MS = 45;
+/** Opacité du brouillard sur un minerai quand on a le Détecteur. */
+const DETECTOR_FOG_ALPHA = 0.55;
 
 const center = (cell: Cell) => ({
   x: cell.col * BLOCK_SIZE + BLOCK_SIZE / 2,
   y: GROUND_Y + cell.row * BLOCK_SIZE + BLOCK_SIZE / 2,
 });
 const distance = (a: Cell, b: Cell) => Math.abs(a.col - b.col) + Math.abs(a.row - b.row);
+/** Image de fissure (0 à 9) selon la résistance restante. */
+const crackFrame = (hp: number, max: number) => Math.round(((max - hp) / max) * 9);
 
 export class GameScene extends Phaser.Scene {
   model!: MinerGame;
   private blocks = new Map<Cell, Phaser.GameObjects.Image>();
   private cracks = new Map<Cell, Phaser.GameObjects.Sprite>();
   private fog = new Map<Cell, Phaser.GameObjects.Rectangle>();
+  /** Lignes actuellement dessinées : seules celles autour de l'écran existent en sprites. */
+  private renderedRows = new Set<number>();
+  private background!: Phaser.GameObjects.TileSprite;
+  private layer!: Layer;
   private debris!: Debris;
   private hover!: Phaser.GameObjects.Rectangle;
   private danger!: Phaser.GameObjects.Image;
@@ -54,16 +66,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.model = new MinerGame();
     this.blocks.clear();
     this.cracks.clear();
     this.fog.clear();
+    this.renderedRows.clear();
     this.started = false;
     this.ended = false;
+    this.model = new MinerGame({ pool: meta.pool() });
+    this.layer = layerAt(0);
 
-    this.add.image(0, 0, 'sky').setOrigin(0);
-    this.add.image(0, GROUND_Y, 'ground').setOrigin(0);
-    for (const cell of this.model.grid.cells) this.createBlock(cell);
+    // Fond de galerie en boucle, fixé à l'écran et décalé avec la caméra ; le ciel passe devant.
+    this.background = this.add
+      .tileSprite(0, 0, GAME_WIDTH, VIEW_HEIGHT, 'ground')
+      .setOrigin(0)
+      .setScrollFactor(0)
+      .setDepth(-2);
+    this.add.image(0, 0, 'sky').setOrigin(0).setDepth(-1);
 
     this.debris = new Debris(this);
     this.hover = this.add
@@ -74,10 +92,16 @@ export class GameScene extends Phaser.Scene {
     this.danger = this.add.image(0, 0, 'danger').setOrigin(0).setScrollFactor(0).setDepth(90).setAlpha(0);
 
     const cam = this.cameras.main;
-    cam.setBounds(0, 0, GAME_WIDTH, WORLD_HEIGHT);
+    cam.setBounds(0, 0, GAME_WIDTH, Number.MAX_SAFE_INTEGER);
     cam.fadeIn(300);
+    this.syncRows();
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
+    this.events.on(Phaser.Scenes.Events.RESUME, this.afterChoice, this);
+    // Phaser ne vide pas scene.events à l'arrêt : on retire l'écouteur pour ne pas l'empiler à chaque partie.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+      this.events.off(Phaser.Scenes.Events.RESUME, this.afterChoice, this),
+    );
     this.input.keyboard?.on('keydown-M', () => toggleMute(this));
     pickaxeCursor(this);
 
@@ -86,12 +110,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    this.updateHover();
-    // Coups épuisés : la fin est déjà programmée, on ne peut plus perdre « distancé ».
-    if (!this.started || this.ended || this.model.over) return;
-
     const cam = this.cameras.main;
-    const speed = Math.min(SCROLL_SPEED_MAX, SCROLL_SPEED_BASE + this.model.depth * SCROLL_SPEED_PER_METER);
+    this.background.tilePositionY = cam.scrollY;
+    this.syncRows();
+    this.updateHover();
+    // Coups épuisés (fin déjà programmée) ou carte à choisir : l'écran ne bouge plus.
+    if (!this.started || this.ended || this.model.over || this.model.awaitingChoice) return;
+
+    const base = Math.min(SCROLL_SPEED_MAX, SCROLL_SPEED_BASE + this.model.depth * SCROLL_SPEED_PER_METER);
+    const speed = base * this.model.mods.scroll;
     // delta plafonné : un onglet mis en arrière-plan ne doit pas faire sauter l'écran d'un coup.
     cam.scrollY += (speed * Math.min(delta, 50)) / 1000;
 
@@ -101,13 +128,47 @@ export class GameScene extends Phaser.Scene {
     if (room < 0) this.end('scroll');
   }
 
-  private createBlock(cell: Cell): void {
-    const { x, y } = center(cell);
-    const texture = cell.row === 0 ? 'grass_block' : BLOCK_TYPES[cell.kind].texture;
-    this.blocks.set(cell, this.add.image(x, y, texture).setDepth(10));
-    if (!cell.revealed) {
-      this.fog.set(cell, this.add.rectangle(x, y, BLOCK_SIZE, BLOCK_SIZE, 0x0b0705).setDepth(20));
+  /** Dessine les lignes qui entrent dans l'écran (avec une marge) et efface celles qui en sortent. */
+  private syncRows(): void {
+    const top = this.cameras.main.scrollY - GROUND_Y;
+    const first = Math.max(0, Math.floor(top / BLOCK_SIZE) - 2);
+    const last = Math.floor((top + VIEW_HEIGHT) / BLOCK_SIZE) + 3;
+    for (const row of this.renderedRows) {
+      if (row < first || row > last) this.unrenderRow(row);
     }
+    for (let row = first; row <= last; row++) {
+      if (!this.renderedRows.has(row)) this.renderRow(row);
+    }
+  }
+
+  private renderRow(row: number): void {
+    this.renderedRows.add(row);
+    for (const cell of this.model.grid.rowCells(row)) {
+      if (cell.destroyed) continue;
+      const { x, y } = center(cell);
+      const texture = cell.row === 0 ? 'grass_block' : BLOCK_TYPES[cell.kind].texture;
+      this.blocks.set(cell, this.add.image(x, y, texture).setDepth(10));
+      const max = BLOCK_TYPES[cell.kind].resistance;
+      if (cell.hp < max) this.cracks.set(cell, this.add.sprite(x, y, 'cracks', crackFrame(cell.hp, max)).setDepth(11));
+      if (!cell.revealed) {
+        const fog = this.add.rectangle(x, y, BLOCK_SIZE, BLOCK_SIZE, 0x0b0705).setDepth(20);
+        this.fog.set(cell, fog.setAlpha(this.fogAlpha(cell)));
+      }
+    }
+  }
+
+  private unrenderRow(row: number): void {
+    this.renderedRows.delete(row);
+    for (const cell of this.model.grid.rowCells(row)) {
+      for (const map of [this.blocks, this.cracks, this.fog] as Map<Cell, Phaser.GameObjects.GameObject>[]) {
+        map.get(cell)?.destroy();
+        map.delete(cell);
+      }
+    }
+  }
+
+  private fogAlpha(cell: Cell): number {
+    return this.model.mods.detector && isOre(cell.kind) ? DETECTOR_FOG_ALPHA : 1;
   }
 
   private cellAt(pointer: Phaser.Input.Pointer): Cell | undefined {
@@ -138,11 +199,60 @@ export class GameScene extends Phaser.Scene {
     this.swingPickaxe(pointer.worldX, pointer.worldY);
     this.play(events);
     this.emitState();
+    this.checkLayer();
 
-    if (this.model.over) {
+    if (this.model.awaitingChoice) {
+      // Palier atteint : on laisse l'explosion se jouer un peu, puis on fige tout pour choisir.
+      this.time.delayedCall(450, () => this.openChoice());
+    } else if (this.model.over) {
       // On laisse les animations finir avant d'afficher le score.
       this.time.delayedCall(1100, () => this.end('picks'));
     }
+  }
+
+  private openChoice(): void {
+    if (this.ended || !this.model.awaitingChoice || this.scene.isPaused()) return;
+    this.hover.setVisible(false);
+    this.scene.pause();
+    this.scene.launch('perk');
+  }
+
+  /** Retour de l'écran des cartes : on applique ce qui se voit, puis la partie reprend. */
+  private afterChoice(): void {
+    for (const [cell, fog] of this.fog) fog.setAlpha(this.fogAlpha(cell));
+    this.emitState();
+    if (this.model.over) this.time.delayedCall(600, () => this.end('picks'));
+  }
+
+  /** Bandeau au passage d'une couche à l'autre, et fond qui change de teinte. */
+  private checkLayer(): void {
+    const layer = layerAt(Math.max(0, this.model.depth - 1));
+    if (layer === this.layer) return;
+    const from = Phaser.Display.Color.ValueToColor(this.layer.tint);
+    const to = Phaser.Display.Color.ValueToColor(layer.tint);
+    this.layer = layer;
+    this.tweens.addCounter({
+      from: 0,
+      to: 100,
+      duration: 1200,
+      onUpdate: (tween) => {
+        const c = Phaser.Display.Color.Interpolate.ColorWithColor(from, to, 100, tween.getValue() ?? 0);
+        this.background.setTint(Phaser.Display.Color.GetColor(c.r, c.g, c.b));
+      },
+    });
+    const banner = this.add
+      .text(GAME_WIDTH / 2, VIEW_HEIGHT / 2 - 60, layer.name, textStyle(28, '#ffd84a'))
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(95)
+      .setAlpha(0);
+    this.tweens.chain({
+      targets: banner,
+      tweens: [
+        { alpha: 1, scale: { from: 1.6, to: 1 }, duration: 350, ease: 'Back.easeOut' },
+        { alpha: 0, delay: 1100, duration: 400, onComplete: () => banner.destroy() },
+      ],
+    });
   }
 
   /** Rejoue les événements du modèle ; les cases soufflées par une explosion partent en onde. */
@@ -176,8 +286,7 @@ export class GameScene extends Phaser.Scene {
         playSfx(this, 'hit');
         this.debris.burst(cell.kind, x, y, 6);
         this.punch(block);
-        const max = BLOCK_TYPES[cell.kind].resistance;
-        const frame = Math.round(((max - event.hp) / max) * 9);
+        const frame = crackFrame(event.hp, BLOCK_TYPES[cell.kind].resistance);
         const crack = this.cracks.get(cell) ?? this.add.sprite(x, y, 'cracks').setDepth(11);
         this.cracks.set(cell, crack.setFrame(frame));
         break;
@@ -219,9 +328,13 @@ export class GameScene extends Phaser.Scene {
         this.fog.delete(cell);
         break;
 
-      case 'bonus':
+      case 'gain':
         playSfx(this, 'bonus');
-        floatingText(this, x, y - 10, `+${event.picks} coups`, '#8cff6b');
+        floatingText(this, x, y - 10, event.picks > 0 ? `+${event.picks} coups` : 'gratuit', '#8cff6b');
+        break;
+
+      case 'levelUp':
+        this.cameras.main.flash(250, 255, 216, 74);
         break;
 
       case 'reveal': {
@@ -291,12 +404,22 @@ export class GameScene extends Phaser.Scene {
     this.ended = true;
     this.hover.setVisible(false);
 
-    const { score, depth, ores } = this.model;
+    const { score, depth, ores, orePoints, gems } = this.model;
     const previousBest = storage.bestScore;
     const record = score > previousBest;
     if (record) storage.bestScore = score;
+    meta.addGems(gems);
 
-    const data: GameOverData = { score, depth, ores: { ...ores }, best: Math.max(score, previousBest), record, reason };
+    const data: GameOverData = {
+      score,
+      depth,
+      ores: { ...ores },
+      orePoints: { ...orePoints },
+      best: Math.max(score, previousBest),
+      record,
+      reason,
+      gems,
+    };
     this.cameras.main.fadeOut(500, 0, 0, 0);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.stop('hud');

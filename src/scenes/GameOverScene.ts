@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { GAME_WIDTH, VIEW_HEIGHT } from '../config';
 import { imageButton, pickaxeCursor, textStyle } from '../fx/effects';
-import { BLOCK_TYPES, ORE_KINDS, ORE_POINTS } from '../model/blockTypes';
+import { BLOCK_TYPES, ORE_KINDS } from '../model/blockTypes';
 import type { GameOverData } from './GameScene';
 
 const REASONS = {
@@ -39,11 +39,11 @@ export class GameOverScene extends Phaser.Scene {
       ...ORE_KINDS.map((ore) => ({
         icon: BLOCK_TYPES[ore].texture,
         label: `× ${data.ores[ore]}`,
-        points: data.ores[ore] * ORE_POINTS[ore],
+        points: data.orePoints[ore],
       })),
     ];
     lines.forEach((line, i) => {
-      const y = 290 + i * 38;
+      const y = 290 + i * 34;
       const row = this.add.container(0, y).setAlpha(0);
       if (line.icon) row.add(this.add.image(110, 0, line.icon).setScale(0.45));
       row.add(this.add.text(line.icon ? 135 : 90, 0, line.label, textStyle(12)).setOrigin(0, 0.5));
@@ -51,12 +51,20 @@ export class GameOverScene extends Phaser.Scene {
       this.tweens.add({ targets: row, alpha: 1, x: { from: -20, to: 0 }, delay: 200 + i * 120, duration: 250 });
     });
 
+    // Gemmes gagnées, à dépenser à l'Atelier.
+    const gems = this.add.container(cx, 468).setAlpha(0);
+    gems.add(this.add.image(-60, 0, 'diamond_block').setScale(0.3));
+    gems.add(this.add.text(-44, 0, `+${data.gems} gemmes`, textStyle(12, '#5decf5')).setOrigin(0, 0.5));
+    this.tweens.add({ targets: gems, alpha: 1, delay: 200 + lines.length * 120, duration: 300 });
+
     const replay = () => this.scene.start('game');
-    imageButton(this, cx, 540, 'play', replay).setScale(0.8);
+    imageButton(this, cx, 540, 'play', replay).setScale(0.7);
+    const workshop = this.add.text(cx, 596, 'Atelier', textStyle(10, '#5decf5')).setOrigin(0.5).setInteractive();
+    workshop.on('pointerdown', () => this.scene.start('workshop'));
     this.input.keyboard?.once('keydown-SPACE', replay);
     this.input.keyboard?.once('keydown-ENTER', replay);
 
-    this.add.text(cx, VIEW_HEIGHT - 20, 'Musique : Fairy Tail, version 8-bit', textStyle(8, '#8a7658')).setOrigin(0.5);
+    this.add.text(cx, VIEW_HEIGHT - 16, 'Musique : Fairy Tail, version 8-bit', textStyle(8, '#8a7658')).setOrigin(0.5);
     pickaxeCursor(this);
     this.cameras.main.fadeIn(400);
   }

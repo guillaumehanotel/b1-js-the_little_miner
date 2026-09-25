@@ -3,8 +3,10 @@ import { GAME_WIDTH, VIEW_HEIGHT } from './config';
 import { GameOverScene } from './scenes/GameOverScene';
 import { GameScene } from './scenes/GameScene';
 import { HudScene } from './scenes/HudScene';
+import { PerkScene } from './scenes/PerkScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { TitleScene } from './scenes/TitleScene';
+import { WorkshopScene } from './scenes/WorkshopScene';
 
 // La police pixel vient de Google Fonts : on l'attend (au plus 1,5 s) pour que Phaser ne dessine
 // pas les premiers textes avec la police de secours.
@@ -26,7 +28,7 @@ fontReady.finally(() => {
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     input: { activePointers: 2 },
-    scene: [PreloadScene, TitleScene, GameScene, HudScene, GameOverScene],
+    scene: [PreloadScene, TitleScene, WorkshopScene, GameScene, HudScene, PerkScene, GameOverScene],
   });
   // Accès depuis la console pour déboguer (dev uniquement).
   if (import.meta.env.DEV) Object.assign(window, { game });

@@ -48,12 +48,19 @@ export function isExplosive(kind: BlockKind): kind is 'tnt' | 'dynamite' {
   return kind === 'tnt' || kind === 'dynamite';
 }
 
+export type Weights = Record<BlockKind, number>;
+
+export const BASE_WEIGHTS = Object.fromEntries(
+  Object.entries(BLOCK_TYPES).map(([kind, type]) => [kind, type.weight]),
+) as Weights;
+
 /** Tire un type selon les poids ; `rng` renvoie un nombre dans [0, 1[. */
-export function randomKind(rng: () => number): BlockKind {
-  const total = Object.values(BLOCK_TYPES).reduce((sum, t) => sum + t.weight, 0);
+export function randomKind(rng: () => number, weights: Weights = BASE_WEIGHTS): BlockKind {
+  const entries = Object.entries(weights) as [BlockKind, number][];
+  const total = entries.reduce((sum, [, w]) => sum + w, 0);
   let roll = rng() * total;
-  for (const [kind, type] of Object.entries(BLOCK_TYPES) as [BlockKind, BlockType][]) {
-    roll -= type.weight;
+  for (const [kind, weight] of entries) {
+    roll -= weight;
     if (roll < 0) return kind;
   }
   return 'dirt';
